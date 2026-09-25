@@ -1,4 +1,3 @@
-import { randomBytes } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { constants } from "node:os";
 import { run } from "./run.ts";
@@ -12,9 +11,9 @@ input.on("error", (error: Error) => {
   process.exit(2);
 });
 
-// On a signal, stop reading and let the write in flight finish: it ends every block it opens. Dying
-// on the signal instead could cut a write short inside a stopped block, which would leave every
-// later workflow command in the step inert, the action's own ::error:: included.
+// On a signal, stop reading and let the write in flight finish: it ends every group it opens. Dying
+// on the signal instead could cut a write short inside a group, which would fold the rest of the
+// step's log into it, the action's own ::error:: included.
 const stop = new AbortController();
 for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
   process.on(signal, () => {
@@ -22,8 +21,7 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
     stop.abort();
   });
 }
-// The reader went away (EPIPE): nothing more can reach the log, and no block can be closed.
+// The reader went away (EPIPE): nothing more can reach the log, and no group can be closed.
 process.stdout.on("error", () => process.exit(1));
 
-// A fresh token per run: output from an earlier run cannot hold it. The runner masks it as ***.
-await run(input, process.stdout, randomBytes(16).toString("hex"), stop.signal);
+await run(input, process.stdout, stop.signal);

@@ -2,8 +2,6 @@ import { readFileSync } from "node:fs";
 import { Readable, Writable } from "node:stream";
 import { run } from "../src/run.ts";
 
-export const token = "test-stop-token";
-
 export const fixture = (name: string): string =>
   readFileSync(new URL(`../fixtures/claude/${name}.jsonl`, import.meta.url), "utf8");
 
@@ -15,19 +13,20 @@ export async function render(input: string): Promise<string> {
       done();
     },
   });
-  await run(Readable.from([input]), output, token);
+  await run(Readable.from([input]), output);
   return log;
 }
 
-// The log's lines as a reader sees them: colors removed, stopped blocks left out.
+// The log's lines as a reader sees them with every group closed: colors removed, folded output
+// left out.
 export function visibleLines(log: string): string[] {
   const lines: string[] = [];
-  let stopped = false;
+  let folded = false;
   for (const line of log.split("\n")) {
-    if (line === `::stop-commands::${token}`) stopped = true;
-    else if (line === `::${token}::`) stopped = false;
+    if (line.startsWith("::group::")) folded = true;
+    else if (line === "::endgroup::") folded = false;
     // biome-ignore lint/suspicious/noControlCharactersInRegex: removes the renderer's colors
-    else if (!stopped) lines.push(line.replace(/\x1b\[[0-9;:]*m/g, ""));
+    else if (!folded) lines.push(line.replace(/\x1b\[[0-9;:]*m/g, ""));
   }
   return lines;
 }

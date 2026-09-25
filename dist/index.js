@@ -1,5 +1,4 @@
 // src/index.ts
-import { randomBytes } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { constants } from "node:os";
 
@@ -46,11 +45,11 @@ var isMessage = (value) => typeof value === "object" && value !== null && !Array
 
 // src/style.ts
 var span = (on, off) => (text) => text === "" ? "" : `\x1B[${on}m${text}\x1B[${off}m`;
-var gray = span("90", "0");
+var gray = span("38;5;244", "0");
 var red = span("31", "0");
 var green = span("32", "0");
 var yellow = span("33", "0");
-var grayItalic = span("3;90", "0");
+var grayItalic = span("3;38;5;244", "0");
 var bold = span("1", "22");
 var code = span("1;36", "22;39");
 
@@ -207,16 +206,11 @@ var foldedTone = {
   hunk: gray
 };
 var Renderer = class {
-  #token;
   #calls = /* @__PURE__ */ new Map();
   // The calls the last printed line sits under. A line for another call first repeats its header.
   #context = [];
   #cwd = "";
   #out = [];
-  // `token` is the stop-commands token, fresh per run.
-  constructor(token) {
-    this.#token = token;
-  }
   // The log text for one message: whole lines, or "" for a message that prints nothing.
   // A message that makes the renderer throw prints one gray line in place of what it had rendered.
   render(message) {
@@ -429,7 +423,7 @@ var Renderer = class {
     this.#context = chain;
   }
   // Tool output: its first three lines that are not blank under the call, then the whole output
-  // folded into a group, inside a stopped block, when the preview does not show all of it.
+  // folded into a group when the preview does not show all of it.
   #output(depth, output) {
     const { lines } = output;
     const nonBlank = (output.preview ?? lines).filter(({ text }) => cleanLine(text).trim() !== "");
@@ -453,9 +447,7 @@ var Renderer = class {
   #fold(depth, lines) {
     const count = `\u2026 ${lines.length} line${lines.length === 1 ? "" : "s"}`;
     this.#out.push(`::group::${this.#gutter(depth)}${gray(count)}`);
-    this.#out.push(`::stop-commands::${this.#token}`);
-    for (const { text, tone } of lines) this.#out.push(foldedTone[tone](text));
-    this.#out.push(`::${this.#token}::`);
+    for (const { text, tone } of lines) this.#line(depth, gray("\u2502"), foldedTone[tone](text));
     this.#out.push("::endgroup::");
   }
   // The agent's text or thinking: `marker` on the first line, │ on the ones after.
@@ -499,8 +491,8 @@ var Renderer = class {
 };
 
 // src/run.ts
-async function run(input2, output, token, signal) {
-  const renderer = new Renderer(token);
+async function run(input2, output, signal) {
+  const renderer = new Renderer();
   const lines = createInterface({ input: input2, crlfDelay: Number.POSITIVE_INFINITY, signal });
   for await (const item of readMessages(lines)) {
     if (signal?.aborted) break;
@@ -526,4 +518,4 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
   });
 }
 process.stdout.on("error", () => process.exit(1));
-await run(input, process.stdout, randomBytes(16).toString("hex"), stop.signal);
+await run(input, process.stdout, stop.signal);

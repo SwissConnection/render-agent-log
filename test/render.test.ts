@@ -1,7 +1,7 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { describe, expect, test } from "vitest";
 import { Renderer } from "../src/render.ts";
-import { fixture, liveCommands, render, token, visibleLines } from "./helpers.ts";
+import { fixture, liveCommands, render, visibleLines } from "./helpers.ts";
 
 const fixtures = [
   "edit-and-bash",
@@ -99,34 +99,30 @@ describe("hostile output", () => {
 
   test("renders to no live command but the renderer's own", async () => {
     const commands = liveCommands(await render(fixture("hostile-output")));
-    const foreign = commands.filter(
-      ({ name, data }) =>
-        !(name === "group" || name === "endgroup" || (name === "stop-commands" && data === token)),
-    );
-    expect(foreign).toEqual([]);
-    const count = (name: string) => commands.filter((command) => command.name === name).length;
-    expect(count("group")).toBe(count("endgroup"));
-    expect(count("stop-commands")).toBe(count("group"));
+    const names = commands.map(({ name }) => name);
+    expect(names.filter((name) => name !== "group" && name !== "endgroup")).toEqual([]);
+    expect(names.join(" ")).toMatch(/^(group endgroup ?)+$/);
   });
 });
 
 describe("a message the build does not know", () => {
-  const renderOne = (message: unknown) =>
-    new Renderer(token).render(message as unknown as SDKMessage);
+  const renderOne = (message: unknown) => new Renderer().render(message as unknown as SDKMessage);
 
   test("prints one gray line for an unknown type", () => {
-    expect(renderOne({ type: "from_a_newer_sdk" })).toBe("\x1b[90m· from_a_newer_sdk\x1b[0m\n");
+    expect(renderOne({ type: "from_a_newer_sdk" })).toBe(
+      "\x1b[38;5;244m· from_a_newer_sdk\x1b[0m\n",
+    );
   });
 
   test("prints one gray line for an unknown system subtype", () => {
     expect(renderOne({ type: "system", subtype: "from_a_newer_sdk" })).toBe(
-      "\x1b[90m· system/from_a_newer_sdk\x1b[0m\n",
+      "\x1b[38;5;244m· system/from_a_newer_sdk\x1b[0m\n",
     );
   });
 
   test("prints one gray line for a message of a known type in a shape it does not know", () => {
     expect(renderOne({ type: "assistant", message: null })).toBe(
-      "\x1b[90m· unrenderable assistant message (TypeError)\x1b[0m\n",
+      "\x1b[38;5;244m· unrenderable assistant message (TypeError)\x1b[0m\n",
     );
   });
 });

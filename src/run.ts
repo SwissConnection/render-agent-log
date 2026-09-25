@@ -7,14 +7,9 @@ import { Renderer } from "./render.ts";
 import { gray } from "./style.ts";
 
 // Renders `input` to `output` as it arrives, one write per message, so the log keeps pace with the
-// agent and a write never ends inside a stopped block. Stops reading when `signal` aborts.
-export async function run(
-  input: Readable,
-  output: Writable,
-  token: string,
-  signal?: AbortSignal,
-): Promise<void> {
-  const renderer = new Renderer(token);
+// agent and a write never ends inside a group. Stops reading when `signal` aborts.
+export async function run(input: Readable, output: Writable, signal?: AbortSignal): Promise<void> {
+  const renderer = new Renderer();
   const lines = createInterface({ input, crlfDelay: Number.POSITIVE_INFINITY, signal });
   for await (const item of readMessages(lines)) {
     if (signal?.aborted) break;

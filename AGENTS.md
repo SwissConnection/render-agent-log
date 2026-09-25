@@ -60,8 +60,8 @@ may reach `dist/`. When an SDK bump fails the typecheck, a message type changed 
    runtime an unknown type prints one gray line; it never crashes and is never dropped silently.
 2. **Untrusted text never starts a line.** The runner executes a line that starts with `::` after
    whitespace or holds `##[` anywhere, and it ends lines at `\r` too. Tool output, call arguments and
-   agent text go through `src/text.ts`; every line outside a stopped block starts with a character the
-   renderer owns; a call's full output goes in a `stop-commands` block. Nothing prints them raw.
+   agent text go through `src/text.ts`, and every line but `::group::` / `::endgroup::` starts with a
+   character the renderer owns, folded output included. Nothing prints them raw.
 3. **A result always sits under its own call**, including parallel calls and subagents.
 4. **Live first.** Flush after every message; nothing may buffer a whole run.
 5. **Workflows that run Claude trigger only on `push` or `workflow_dispatch`.** This repository is

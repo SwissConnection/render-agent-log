@@ -42,8 +42,8 @@ export function truncate(text: string, max: number): string {
   return points.length <= max ? text : `${points.slice(0, max - 1).join("")}…`;
 }
 
-// The runner finds `##[command]` anywhere in a line, stopped blocks aside. An SGR code that changes
-// nothing here (underline off) splits every `##[` so it no longer parses, and the log still shows it.
+// The runner finds `##[command]` anywhere in a line. An SGR code that changes nothing here
+// (underline off) splits every `##[` so it no longer parses, and the log still shows it.
 export function defuse(line: string): string {
   return line.replaceAll("##[", "#\x1b[24m#[");
 }

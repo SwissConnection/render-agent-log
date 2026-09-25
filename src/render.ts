@@ -49,21 +49,15 @@ const foldedTone: Record<Tone, Color> = {
 // Turns SDK messages into log lines, one message at a time. It keeps the calls it has seen, so a
 // result can be put under its own call, and a subagent's messages under the Agent call.
 //
-// Every line outside a stopped block starts with a character the renderer owns (●, ✻, └, │, ›, ·),
-// so no untrusted text can start a line and run as a workflow command (spec, output rule 2). A
-// message renders to whole blocks, so the text of one `render` call never leaves a block open.
+// Every line but the renderer's own group commands starts with a character the renderer owns (●, ✻,
+// └, │, ›, ·), so no untrusted text can start a line and run as a workflow command (spec, output
+// rule 2). A message renders to whole groups, so the text of one `render` call never leaves one open.
 export class Renderer {
-  readonly #token: string;
   readonly #calls = new Map<string, Call>();
   // The calls the last printed line sits under. A line for another call first repeats its header.
   #context: string[] = [];
   #cwd = "";
   #out: string[] = [];
-
-  // `token` is the stop-commands token, fresh per run.
-  constructor(token: string) {
-    this.#token = token;
-  }
 
   // The log text for one message: whole lines, or "" for a message that prints nothing.
   // A message that makes the renderer throw prints one gray line in place of what it had rendered.
@@ -291,7 +285,7 @@ export class Renderer {
   }
 
   // Tool output: its first three lines that are not blank under the call, then the whole output
-  // folded into a group, inside a stopped block, when the preview does not show all of it.
+  // folded into a group when the preview does not show all of it.
   #output(depth: number, output: Output): void {
     const { lines } = output;
     const nonBlank = (output.preview ?? lines).filter(({ text }) => cleanLine(text).trim() !== "");
@@ -317,9 +311,7 @@ export class Renderer {
   #fold(depth: number, lines: OutputLine[]): void {
     const count = `… ${lines.length} line${lines.length === 1 ? "" : "s"}`;
     this.#out.push(`::group::${this.#gutter(depth)}${gray(count)}`);
-    this.#out.push(`::stop-commands::${this.#token}`);
-    for (const { text, tone } of lines) this.#out.push(foldedTone[tone](text));
-    this.#out.push(`::${this.#token}::`);
+    for (const { text, tone } of lines) this.#line(depth, gray("│"), foldedTone[tone](text));
     this.#out.push("::endgroup::");
   }
 

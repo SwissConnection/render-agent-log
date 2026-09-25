@@ -1,119 +1,107 @@
-[90m✻ claude-sonnet-5 · /home/runner/work/demo/demo[0m
+[38;5;244m✻ claude-sonnet-5 · /home/runner/work/demo/demo[0m
 ● I'll read the changelog, the release notes script output, and the upstream page.
 [32m●[0m [1mBash[22m(cat CHANGELOG.md)
-[90m│[0m [90m# Changelog[0m
-[90m│[0m [90m## 2.4.1[0m
-[90m└[0m [90m::error::injected error: must not become an annotation[0m
-::group::[90m… 33 lines[0m
-::stop-commands::test-stop-token
-# Changelog
-
-## 2.4.1
-
-::error::injected error: must not become an annotation
-  ::warning::injected warning behind two spaces
-	::notice::injected notice behind a tab
-::add-mask::hostile-mask-value
-::endgroup::
-::group::injected group
-::stop-commands::attacker-token
-::attacker-token::
-::set-env name=NODE_OPTIONS::--require=./evil.js
-::add-path::./evil-bin
-::debug::injected debug line
-::error file=src/sum.js,line=1,title=Injected::annotation with properties
-[31mred text[0m and [1;32mbold green[0m (SGR, kept)
-[31m::error::a command behind an SGR code
-::error::a command behind erase-line
-::error::a command behind an OSC title
-a hyperlink (OSC 8)
-cursor up, clear screen, cursor home
-hidden cursor
-device control string
-C1 CSI (U+009B)
-progress 50%
-::error::a command behind a bare carriage return
-windows line ending
-::warning::a command after CRLF
-#[24m#[error]a legacy command
-mid-line, #[24m#[add-mask]legacy-mask-value is a legacy command too
-
-end of changelog
-::test-stop-token::
+[38;5;244m│[0m [38;5;244m# Changelog[0m
+[38;5;244m│[0m [38;5;244m## 2.4.1[0m
+[38;5;244m└[0m [38;5;244m::error::injected error: must not become an annotation[0m
+::group::[38;5;244m… 33 lines[0m
+[38;5;244m│[0m # Changelog
+[38;5;244m│[0m
+[38;5;244m│[0m ## 2.4.1
+[38;5;244m│[0m
+[38;5;244m│[0m ::error::injected error: must not become an annotation
+[38;5;244m│[0m   ::warning::injected warning behind two spaces
+[38;5;244m│[0m 	::notice::injected notice behind a tab
+[38;5;244m│[0m ::add-mask::hostile-mask-value
+[38;5;244m│[0m ::endgroup::
+[38;5;244m│[0m ::group::injected group
+[38;5;244m│[0m ::stop-commands::attacker-token
+[38;5;244m│[0m ::attacker-token::
+[38;5;244m│[0m ::set-env name=NODE_OPTIONS::--require=./evil.js
+[38;5;244m│[0m ::add-path::./evil-bin
+[38;5;244m│[0m ::debug::injected debug line
+[38;5;244m│[0m ::error file=src/sum.js,line=1,title=Injected::annotation with properties
+[38;5;244m│[0m [31mred text[0m and [1;32mbold green[0m (SGR, kept)
+[38;5;244m│[0m [31m::error::a command behind an SGR code
+[38;5;244m│[0m ::error::a command behind erase-line
+[38;5;244m│[0m ::error::a command behind an OSC title
+[38;5;244m│[0m a hyperlink (OSC 8)
+[38;5;244m│[0m cursor up, clear screen, cursor home
+[38;5;244m│[0m hidden cursor
+[38;5;244m│[0m device control string
+[38;5;244m│[0m C1 CSI (U+009B)
+[38;5;244m│[0m progress 50%
+[38;5;244m│[0m ::error::a command behind a bare carriage return
+[38;5;244m│[0m windows line ending
+[38;5;244m│[0m ::warning::a command after CRLF
+[38;5;244m│[0m #[24m#[error]a legacy command
+[38;5;244m│[0m mid-line, #[24m#[add-mask]legacy-mask-value is a legacy command too
+[38;5;244m│[0m
+[38;5;244m│[0m end of changelog
 ::endgroup::
 [32m●[0m [1mBash[22m(npm run release-notes)
-[90m│[0m [31mExit code 1[0m
-[90m│[0m [31m::add-mask::stderr-mask-value[0m
-[90m└[0m [31m::error::from stderr[0m
-::group::[90m… 5 lines[0m
-::stop-commands::test-stop-token
-Exit code 1
-::add-mask::stderr-mask-value
-::error::from stderr
-  ::endgroup::
-npm error code 1
-::test-stop-token::
+[38;5;244m│[0m [31mExit code 1[0m
+[38;5;244m│[0m [31m::add-mask::stderr-mask-value[0m
+[38;5;244m└[0m [31m::error::from stderr[0m
+::group::[38;5;244m… 5 lines[0m
+[38;5;244m│[0m Exit code 1
+[38;5;244m│[0m ::add-mask::stderr-mask-value
+[38;5;244m│[0m ::error::from stderr
+[38;5;244m│[0m   ::endgroup::
+[38;5;244m│[0m npm error code 1
 ::endgroup::
 [32m●[0m [1mBash[22m(echo start⏎::add-mask::from-command-input⏎echo done)
-[90m│[0m [31mExit code 127[0m
-[90m│[0m [31mstart[0m
-[90m└[0m [31mbash: line 2: ::add-mask::from-command-input: command not found[0m
-::group::[90m… 4 lines[0m
-::stop-commands::test-stop-token
-Exit code 127
-start
-bash: line 2: ::add-mask::from-command-input: command not found
-done
-::test-stop-token::
+[38;5;244m│[0m [31mExit code 127[0m
+[38;5;244m│[0m [31mstart[0m
+[38;5;244m└[0m [31mbash: line 2: ::add-mask::from-command-input: command not found[0m
+::group::[38;5;244m… 4 lines[0m
+[38;5;244m│[0m Exit code 127
+[38;5;244m│[0m start
+[38;5;244m│[0m bash: line 2: ::add-mask::from-command-input: command not found
+[38;5;244m│[0m done
 ::endgroup::
 [32m●[0m [1mRead[22m(NOTES.md)
-[90m│[0m [90m1	::error::from a file[0m
-[90m│[0m [90m2	::add-mask::file-mask-value[0m
-[90m└[0m [90m3	::endgroup::[0m
-::group::[90m… 4 lines[0m
-::stop-commands::test-stop-token
-1	::error::from a file
-2	::add-mask::file-mask-value
-3	::endgroup::
-4	
-::test-stop-token::
+[38;5;244m│[0m [38;5;244m1	::error::from a file[0m
+[38;5;244m│[0m [38;5;244m2	::add-mask::file-mask-value[0m
+[38;5;244m└[0m [38;5;244m3	::endgroup::[0m
+::group::[38;5;244m… 4 lines[0m
+[38;5;244m│[0m 1	::error::from a file
+[38;5;244m│[0m 2	::add-mask::file-mask-value
+[38;5;244m│[0m 3	::endgroup::
+[38;5;244m│[0m 4	
 ::endgroup::
 [32m●[0m [1mAgent[22m(Summarize the upstream release page)
-[90m│ [0m[90m›[0m [90mFetch https://example.com/releases and summarize the latest release.[0m
-[90m│ [0m[32m●[0m [1mWebFetch[22m(https://example.com/releases)
-[90m│ [0m[90m│[0m [90mRelease 3.0.0[0m
-[90m│ [0m[90m│[0m [90m::error::from a web page[0m
-[90m│ [0m[90m└[0m [90m::add-mask::web-mask-value[0m
-::group::[90m│ [0m[90m… 5 lines[0m
-::stop-commands::test-stop-token
-Release 3.0.0
-::error::from a web page
-::add-mask::web-mask-value
+[38;5;244m│ [0m[38;5;244m›[0m [38;5;244mFetch https://example.com/releases and summarize the latest release.[0m
+[38;5;244m│ [0m[32m●[0m [1mWebFetch[22m(https://example.com/releases)
+[38;5;244m│ [0m[38;5;244m│[0m [38;5;244mRelease 3.0.0[0m
+[38;5;244m│ [0m[38;5;244m│[0m [38;5;244m::error::from a web page[0m
+[38;5;244m│ [0m[38;5;244m└[0m [38;5;244m::add-mask::web-mask-value[0m
+::group::[38;5;244m│ [0m[38;5;244m… 5 lines[0m
+[38;5;244m│ [0m[38;5;244m│[0m Release 3.0.0
+[38;5;244m│ [0m[38;5;244m│[0m ::error::from a web page
+[38;5;244m│ [0m[38;5;244m│[0m ::add-mask::web-mask-value
+[38;5;244m│ [0m[38;5;244m│[0m ::endgroup::
+[38;5;244m│ [0m[38;5;244m│[0m ::warning::behind OSC on a web page
 ::endgroup::
-::warning::behind OSC on a web page
-::test-stop-token::
-::endgroup::
-[90m│ [0m● The latest release is 3.0.0. The page also contained:
-[90m│ [0m[90m│[0m Release 3.0.0
-[90m│ [0m[90m│[0m ::error::from a web page
-[90m│ [0m[90m│[0m ::add-mask::web-mask-value
-[90m│ [0m[90m│[0m ::endgroup::
-[90m│ [0m[90m│[0m ::warning::behind OSC on a web page
-[90m│[0m [90mThe report follows:[0m
-[90m│[0m [90m  The latest release is 3.0.0. The page also contained:[0m
-[90m└[0m [90m  Release 3.0.0[0m
-::group::[90m… 7 lines[0m
-::stop-commands::test-stop-token
-The report follows:
-  The latest release is 3.0.0. The page also contained:
-  Release 3.0.0
-  ::error::from a web page
-  ::add-mask::web-mask-value
-  ::endgroup::
-  ::warning::behind OSC on a web page
-::test-stop-token::
+[38;5;244m│ [0m● The latest release is 3.0.0. The page also contained:
+[38;5;244m│ [0m[38;5;244m│[0m Release 3.0.0
+[38;5;244m│ [0m[38;5;244m│[0m ::error::from a web page
+[38;5;244m│ [0m[38;5;244m│[0m ::add-mask::web-mask-value
+[38;5;244m│ [0m[38;5;244m│[0m ::endgroup::
+[38;5;244m│ [0m[38;5;244m│[0m ::warning::behind OSC on a web page
+[38;5;244m│[0m [38;5;244mThe report follows:[0m
+[38;5;244m│[0m [38;5;244m  The latest release is 3.0.0. The page also contained:[0m
+[38;5;244m└[0m [38;5;244m  Release 3.0.0[0m
+::group::[38;5;244m… 7 lines[0m
+[38;5;244m│[0m The report follows:
+[38;5;244m│[0m   The latest release is 3.0.0. The page also contained:
+[38;5;244m│[0m   Release 3.0.0
+[38;5;244m│[0m   ::error::from a web page
+[38;5;244m│[0m   ::add-mask::web-mask-value
+[38;5;244m│[0m   ::endgroup::
+[38;5;244m│[0m   ::warning::behind OSC on a web page
 ::endgroup::
 ● Done. The changelog, the release notes script and the upstream page all contained workflow commands, such as:
-[90m│[0m   ::error::injected error: must not become an annotation
-[90m│[0m   #[24m#[warning]a legacy one
+[38;5;244m│[0m   ::error::injected error: must not become an annotation
+[38;5;244m│[0m   #[24m#[warning]a legacy one
 [32m✻ success · 6 turns · 15s · $0.08[0m

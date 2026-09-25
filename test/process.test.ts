@@ -23,30 +23,29 @@ const result = {
   tool_use_result: { stdout, stderr: "", interrupted: false },
 };
 
-// SIGTERM while the renderer is blocked writing a stopped block to a reader that has paused, as
-// when a runner's timeout stops the step. Dying there would leave the rest of the step's commands
-// inert; the block must still end.
-test("a renderer stopped mid-block still ends the block", async () => {
+// SIGTERM while the renderer is blocked writing a group to a reader that has paused, as when a
+// runner's timeout stops the step. Dying there would fold the rest of the step's log, the action's
+// own ::error:: included, into the group; the group must still end.
+test("a renderer stopped mid-group still ends the group", async () => {
   const child = spawn(process.execPath, ["src/index.ts"], { stdio: ["pipe", "pipe", "inherit"] });
   child.stdin.write(`${JSON.stringify(call)}\n${JSON.stringify(result)}\n`);
   let log = "";
-  let stopToken: string | undefined;
+  let opened = false;
   child.stdout.setEncoding("utf8");
   child.stdout.on("data", (chunk: string) => {
     log += chunk;
-    if (stopToken !== undefined) return;
-    stopToken = /^::stop-commands::(\w+)$/m.exec(log)?.[1];
-    if (stopToken !== undefined) child.stdout.pause();
+    if (opened) return;
+    opened = log.includes("::group::");
+    if (opened) child.stdout.pause();
   });
-  while (stopToken === undefined) await sleep(10);
+  while (!opened) await sleep(10);
   await sleep(200);
-  expect(log).not.toContain(`::${stopToken}::`);
+  expect(log).not.toContain("::endgroup::");
 
   child.kill("SIGTERM");
   child.stdout.resume();
   const [code] = await once(child, "exit");
 
   expect(code).toBe(143);
-  const tail = log.slice(log.lastIndexOf(`::stop-commands::${stopToken}`));
-  expect(tail).toMatch(new RegExp(`\\n::${stopToken}::\\n::endgroup::\\n$`));
+  expect(log.slice(log.lastIndexOf("::group::"))).toMatch(/\n::endgroup::\n$/);
 }, 20_000);
