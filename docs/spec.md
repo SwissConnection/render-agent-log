@@ -30,8 +30,8 @@ and outputs are in `sdk-tools.d.ts`, generated upstream from JSON Schema that is
 - **Live:** `claude -p … --output-format stream-json --verbose`, one JSON message per line.
 - **After the run:** `claude-code-action`'s `execution_file` output, a JSON array of the same messages.
 
-The renderer imports these types and switches exhaustively over `SDKMessage.type`. When Renovate bumps
-the SDK and a new message type appears, `tsc` fails in that PR, and that failure is the work item.
+The renderer imports these types and switches exhaustively over `SDKMessage.type`. When a bump of
+the SDK adds a message type, `tsc` fails in that PR, and that failure is the work item.
 At runtime, a message the build did not know about prints as one gray `· <type>` line. It is never
 dropped silently and never crashes the renderer.
 
@@ -90,8 +90,7 @@ deliverable.
 
 - **Language:** TypeScript (strict), Node 24. It is the only language with the official types, and
   JavaScript actions run on every runner without setup.
-- **Tools:** Biome (lint and format), Vitest, esbuild, and Renovate with the SDK as a pinned
-  devDependency.
+- **Tools:** Biome (lint and format), Vitest, esbuild, and the SDK as a pinned devDependency.
 - **Tests:** golden files rendered from fixtures, plus targeted cases for the silent wrong answers:
   parallel-call attribution, errors staying red, subagent nesting, the unknown-type line, and injected
   `::error::` / `::add-mask::` / `::endgroup::` staying inert. No tests that restate the code.

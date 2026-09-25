@@ -44,8 +44,7 @@ Node 24 (the Action's runtime), npm. `npm ci` after `git worktree add`.
 
 CI (`.github/workflows/ci.yml`) runs all but `fix`, and fails when `dist/` differs from a fresh build,
 so commit `dist/` with every source change. The SDK is imported with `import type` only; nothing of it
-may reach `dist/`. Renovate never automerges an SDK bump: a failing typecheck on that PR means a
-message type changed (rule 1).
+may reach `dist/`. When an SDK bump fails the typecheck, a message type changed (rule 1).
 
 ## Rules
 
