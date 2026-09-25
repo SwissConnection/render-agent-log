@@ -41,7 +41,7 @@ dropped silently and never crashes the renderer.
 |---|---|
 | `system/init` | gray `✻ <model> · <cwd>` line |
 | assistant `text` | `●` prose with a small Markdown subset turned into ANSI: bold, inline code, headings, lists |
-| assistant `thinking` | dim italic, when present |
+| assistant `thinking` | gray italic, when present |
 | assistant `tool_use` | green `●` **Tool**(main argument, one line, ≤140 characters) |
 | user `tool_result` | up to 3 preview lines under `⎿` (gray, red if `is_error`), then the full output in `::group::… N lines` |
 | Edit/Write result | colored diff from `tool_use_result.structuredPatch` |
@@ -65,6 +65,11 @@ Rules:
 4. Output is flushed per message, so the live log keeps pace with the agent.
 5. Secrets: this adds no exposure beyond `show_full_output`, and GitHub still masks them verbatim.
    The README says so plainly.
+6. **The renderer's own colors adapt to the theme.** The log maps the named colors to a shade per
+   theme, so the renderer uses only gray (90), red, green, cyan, bold and italic. It never uses black
+   or white, which disappear on one theme, or dim, which the log renders as normal text. It also
+   never sets backgrounds or 256-color and truecolor codes, which keep one shade on both themes.
+   Tool output keeps its own colors (rule 3).
 
 ## Packaging
 
