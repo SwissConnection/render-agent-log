@@ -1,5 +1,6 @@
 # Spike (#2): live, rendered output from inside claude-code-action. The action runs spike/wrapper's
 # stand-in for claude, which tees the SDK's stream through a throwaway renderer into this step's log.
+# Dispatch it after bumping the action: the wrapper leans on the action's internals (see #2).
 # Runs Claude, so workflow_dispatch only (AGENTS.md rule 5).
 name: Spike wrapper
 

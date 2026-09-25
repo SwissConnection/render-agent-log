@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Stand-in for claude, passed to claude-code-action as path_to_claude_code_executable. It runs the real
-# claude with the SDK's stdin, stdout and stderr untouched, and tees a copy of stdout through render.py
-# into the step's log. Linux only: it writes to the parent's stdout through /proc.
+# claude on the SDK's own stdin and stderr, passes its stdout through unchanged, and tees a copy through
+# render.py into the step's log. Linux only: it writes to the parent's stdout through /proc.
 #
 # Gotchas:
 # - The action prepends this directory to PATH, for the agent's Bash tool and for every later step.
 #   That is why the file is not called claude and sits alone in bin/.
-# - The action and the SDK also run this path for other subcommands (plugin install); only the SDK's
-#   query passes --output-format stream-json, so everything else goes straight to the real claude.
+# - The action also runs this path for other subcommands (plugin install). Only the SDK's query passes
+#   --output-format stream-json, so everything else goes straight to the real claude.
 set -euo pipefail
 
 # The native claude the SDK bundles, which the action installs with it: the version always matches the

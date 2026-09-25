@@ -81,6 +81,11 @@ matches the source.
     for `claude-code-action` users, meaning #141's audience and our `claude.yml` / `claude-pr-summary.yml`.
   - Without inputs, it puts the CLI on `PATH` for live piping:
     `claude -p … --output-format stream-json --verbose | render-agent-log`.
+  - Live inside `claude-code-action`, it ships the wrapper from the spike (#2), passed as
+    `path_to_claude_code_executable`. The wrapper runs the `claude` that the action installs with the
+    Agent SDK, passes the SDK its stream untouched, and tees a copy through the renderer into the
+    step's log (`/proc/$PPID/fd/1`, so Linux only). If the renderer exits non-zero, the wrapper closes
+    the stopped block and the group for it.
 - **npm** `@swissconnection/render-agent-log`: later, when someone wants it in a local terminal.
 
 The Action comes first because it is the product. The CLI is its live mode, not a separate
@@ -109,14 +114,14 @@ deliverable.
    `claude-code-action`: point `path_to_claude_code_executable` at a wrapper that tees the stream
    into the renderer and writes to the action process's stdout (`/proc/$PPID/fd/1`, Linux only). If
    it holds, every workflow gets live output without leaving the action. If not, the direct CLI
-   stays the live path. The spike workflow stays afterwards as a visual check: it renders the
-   fixtures into a real log on every PR.
+   stays the live path. **Result (#2): it holds**, and `spike-wrapper.yml` re-checks it on dispatch
+   when the action is bumped. The render spike's `visual-check.yml` stays afterwards as a visual
+   check: it renders the fixtures into a real log on every PR.
 1. **Core and Action, v0.1.** Build the renderer, the fixtures, both Action modes and a CI release.
 2. **Dogfood in swissconn-workspace.** Add a render step to `claude.yml` and `claude-pr-summary.yml`.
-   Live is preferred wherever its costs don't outweigh it. The dependency review uses the wrapper if
-   the spike validates it; otherwise it moves to a direct `claude -p | render-agent-log` call, since it
-   uses nothing `claude-code-action` adds. `claude.yml` needs the action's tag mode, so it stays with
-   the action: live through the wrapper, or rendered after the run.
+   Live is preferred wherever its costs don't outweigh it. The spike validated the wrapper (#2), so
+   the dependency review stays on `claude-code-action` and goes live through it, and so does
+   `claude.yml`, which needs the action's tag mode.
 3. **v1 and discoverability.** Marketplace listing (branding, topics), a comment on
    claude-code-action#141, a link request to claude-code-log (its TODO lists GitHub Actions), and
    awesome-claude-code.
