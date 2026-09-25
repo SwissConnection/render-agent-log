@@ -1,0 +1,31 @@
+# Prints hand-written sample output so the job log can be checked by eye, in light and dark theme.
+# No token, no agent. Once the renderer exists, this renders the fixtures instead.
+name: Visual check
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: SGR colors
+        run: spike/render/colors.sh
+      - name: ANSI in group titles
+        run: spike/render/group-title.sh
+      - name: stop-commands inside a group
+        run: spike/render/stop-commands.sh
+      - name: Glyphs
+        run: spike/render/glyphs.sh
+      - name: Long lines and long groups
+        run: spike/render/long.sh
+      - name: Live output
+        run: spike/render/live.sh
