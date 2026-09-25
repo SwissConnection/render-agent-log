@@ -119,9 +119,10 @@ deliverable.
    check: it renders the fixtures into a real log on every PR.
 1. **Core and Action, v0.1.** Build the renderer, the fixtures, both Action modes and a CI release.
 2. **Dogfood in swissconn-workspace.** Add a render step to `claude.yml` and `claude-pr-summary.yml`.
-   Live is preferred wherever its costs don't outweigh it. The spike validated the wrapper (#2), so
-   the dependency review stays on `claude-code-action` and goes live through it, and so does
-   `claude.yml`, which needs the action's tag mode.
+   Live is preferred wherever its costs don't outweigh it. The dependency review uses nothing
+   `claude-code-action` adds, so it leaves the action for a direct `claude -p | render-agent-log`
+   call, which runs on any OS and does not depend on the action's internals. `claude.yml` (tag mode)
+   and `claude-pr-summary.yml` stay on the action and go live through the wrapper (#2).
 3. **v1 and discoverability.** Marketplace listing (branding, topics), a comment on
    claude-code-action#141, a link request to claude-code-log (its TODO lists GitHub Actions), and
    awesome-claude-code.
