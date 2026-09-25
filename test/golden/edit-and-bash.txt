@@ -1,0 +1,566 @@
+[38;5;244m✻ claude-sonnet-5 · /home/runner/work/demo/demo[0m
+[32m●[0m [1mRead[22m(src/sum.js)
+[38;5;244m│[0m [38;5;244m1	export function sum(values) {[0m
+[38;5;244m│[0m [38;5;244m2	  let total = 0;[0m
+[38;5;244m└[0m [38;5;244m3	  for (let i = 0; i <= values.length; i++) {[0m
+::group::[38;5;244m… 8 lines[0m
+[38;5;244m│[0m 1	export function sum(values) {
+[38;5;244m│[0m 2	  let total = 0;
+[38;5;244m│[0m 3	  for (let i = 0; i <= values.length; i++) {
+[38;5;244m│[0m 4	    total += values[i];
+[38;5;244m│[0m 5	  }
+[38;5;244m│[0m 6	  return total;
+[38;5;244m│[0m 7	}
+[38;5;244m│[0m 8	
+::endgroup::
+[32m●[0m [1mRead[22m(src/sum.test.js)
+[38;5;244m│[0m [38;5;244m1	import { test } from "node:test";[0m
+[38;5;244m│[0m [38;5;244m2	import assert from "node:assert/strict";[0m
+[38;5;244m└[0m [38;5;244m3	import { sum } from "./sum.js";[0m
+::group::[38;5;244m… 8 lines[0m
+[38;5;244m│[0m 1	import { test } from "node:test";
+[38;5;244m│[0m 2	import assert from "node:assert/strict";
+[38;5;244m│[0m 3	import { sum } from "./sum.js";
+[38;5;244m│[0m 4	
+[38;5;244m│[0m 5	test("sums a list", () => {
+[38;5;244m│[0m 6	  assert.equal(sum([1, 2, 3]), 6);
+[38;5;244m│[0m 7	});
+[38;5;244m│[0m 8	
+::endgroup::
+[32m●[0m [1mBash[22m(npm test)
+[38;5;244m│[0m [31mExit code 1[0m
+[38;5;244m│[0m [31m> test[0m
+[38;5;244m└[0m [31m> node --test[0m
+::group::[38;5;244m… 35 lines[0m
+[38;5;244m│[0m Exit code 1
+[38;5;244m│[0m
+[38;5;244m│[0m > test
+[38;5;244m│[0m > node --test
+[38;5;244m│[0m
+[38;5;244m│[0m ✖ sums a list (0.641458ms)
+[38;5;244m│[0m ℹ tests 1
+[38;5;244m│[0m ℹ suites 0
+[38;5;244m│[0m ℹ pass 0
+[38;5;244m│[0m ℹ fail 1
+[38;5;244m│[0m ℹ cancelled 0
+[38;5;244m│[0m ℹ skipped 0
+[38;5;244m│[0m ℹ todo 0
+[38;5;244m│[0m ℹ duration_ms 44.357792
+[38;5;244m│[0m
+[38;5;244m│[0m ✖ failing tests:
+[38;5;244m│[0m
+[38;5;244m│[0m test at src/sum.test.js:5:1
+[38;5;244m│[0m ✖ sums a list (0.641458ms)
+[38;5;244m│[0m   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+[38;5;244m│[0m   
+[38;5;244m│[0m   NaN !== 6
+[38;5;244m│[0m   
+[38;5;244m│[0m       at TestContext.<anonymous> (file:///home/runner/work/demo/demo/src/sum.test.js:6:10)
+[38;5;244m│[0m       at Test.runInAsyncScope (node:async_hooks:226:14)
+[38;5;244m│[0m       at Test.run (node:internal/test_runner/test:1397:25)
+[38;5;244m│[0m       at Test.start (node:internal/test_runner/test:1257:17)
+[38;5;244m│[0m       at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+[38;5;244m│[0m     generatedMessage: true,
+[38;5;244m│[0m     code: 'ERR_ASSERTION',
+[38;5;244m│[0m     actual: NaN,
+[38;5;244m│[0m     expected: 6,
+[38;5;244m│[0m     operator: 'strictEqual',
+[38;5;244m│[0m     diff: 'simple'
+[38;5;244m│[0m   }
+::endgroup::
+● The loop uses [1;36m<=[22;39m, so it reads one element past the end and adds [1;36mundefined[22;39m, which gives [1;36mNaN[22;39m.
+[32m●[0m [1mEdit[22m(src/sum.js)
+[38;5;244m│[0m [31m-  for (let i = 0; i <= values.length; i++) {[0m
+[38;5;244m└[0m [32m+  for (let i = 0; i < values.length; i++) {[0m
+::group::[38;5;244m… 8 lines[0m
+[38;5;244m│[0m [38;5;244m@@ -1,6 +1,6 @@[0m
+[38;5;244m│[0m  export function sum(values) {
+[38;5;244m│[0m    let total = 0;
+[38;5;244m│[0m [31m-  for (let i = 0; i <= values.length; i++) {[0m
+[38;5;244m│[0m [32m+  for (let i = 0; i < values.length; i++) {[0m
+[38;5;244m│[0m      total += values[i];
+[38;5;244m│[0m    }
+[38;5;244m│[0m    return total;
+::endgroup::
+[32m●[0m [1mBash[22m(npm test)
+[38;5;244m│[0m [38;5;244m> test[0m
+[38;5;244m│[0m [38;5;244m> node --test[0m
+[38;5;244m└[0m [38;5;244m✔ sums a list (0.276291ms)[0m
+::group::[38;5;244m… 12 lines[0m
+[38;5;244m│[0m > test
+[38;5;244m│[0m > node --test
+[38;5;244m│[0m
+[38;5;244m│[0m ✔ sums a list (0.276291ms)
+[38;5;244m│[0m ℹ tests 1
+[38;5;244m│[0m ℹ suites 0
+[38;5;244m│[0m ℹ pass 1
+[38;5;244m│[0m ℹ fail 0
+[38;5;244m│[0m ℹ cancelled 0
+[38;5;244m│[0m ℹ skipped 0
+[38;5;244m│[0m ℹ todo 0
+[38;5;244m│[0m ℹ duration_ms 38.383084
+::endgroup::
+[32m●[0m [1mBash[22m(sleep 4 && echo slow done)
+[32m●[0m [1mBash[22m(sleep 1 && echo fast done)
+[38;5;244m└[0m [38;5;244mfast done[0m
+[32m●[0m [1mBash[22m(sleep 4 && echo slow done)
+[38;5;244m└[0m [38;5;244mslow done[0m
+[32m●[0m [1mBash[22m(node --help)
+[38;5;244m│[0m [38;5;244mUsage: node [options] [ script.js ] [arguments][0m
+[38;5;244m│[0m [38;5;244m       node inspect [options] [ script.js | host:port ] [arguments][0m
+[38;5;244m└[0m [38;5;244mOptions:[0m
+::group::[38;5;244m… 451 lines[0m
+[38;5;244m│[0m Usage: node [options] [ script.js ] [arguments]
+[38;5;244m│[0m        node inspect [options] [ script.js | host:port ] [arguments]
+[38;5;244m│[0m
+[38;5;244m│[0m Options:
+[38;5;244m│[0m   -                           script read from stdin (default if no
+[38;5;244m│[0m                               file name is provided, interactive mode
+[38;5;244m│[0m                               if a tty)
+[38;5;244m│[0m   --                          indicate the end of node options
+[38;5;244m│[0m   --abort-on-uncaught-exception
+[38;5;244m│[0m                               aborting instead of exiting causes a
+[38;5;244m│[0m                               core file to be generated for analysis
+[38;5;244m│[0m   --allow-addons              allow use of addons when any
+[38;5;244m│[0m                               permissions are set
+[38;5;244m│[0m   --allow-child-process       allow use of child process when any
+[38;5;244m│[0m                               permissions are set
+[38;5;244m│[0m   --allow-ffi                 allow use of FFI when any permissions
+[38;5;244m│[0m                               are set
+[38;5;244m│[0m   --allow-fs-read=...         allow permissions to read the
+[38;5;244m│[0m                               filesystem
+[38;5;244m│[0m   --allow-fs-write=...        allow permissions to write in the
+[38;5;244m│[0m                               filesystem
+[38;5;244m│[0m   --allow-inspector           allow use of inspector when any
+[38;5;244m│[0m                               permissions are set
+[38;5;244m│[0m   --allow-net                 allow use of network when any
+[38;5;244m│[0m                               permissions are set
+[38;5;244m│[0m   --allow-openssl-store       allow use of OpenSSL STORE loaders when
+[38;5;244m│[0m                               any permissions are set
+[38;5;244m│[0m   --allow-wasi                allow wasi when any permissions are set
+[38;5;244m│[0m   --allow-worker              allow worker threads when any
+[38;5;244m│[0m                               permissions are set
+[38;5;244m│[0m   --build-sea=...             Build a Node.js single executable
+[38;5;244m│[0m                               application
+[38;5;244m│[0m   --build-snapshot            Generate a snapshot blob when the
+[38;5;244m│[0m                               process exits.
+[38;5;244m│[0m   --build-snapshot-config=... Generate a snapshot blob when the
+[38;5;244m│[0m                               process exits using aJSON configuration
+[38;5;244m│[0m                               in the specified path.
+[38;5;244m│[0m   -c, --check                 syntax check script without executing
+[38;5;244m│[0m   --completion-bash           print source-able bash completion
+[38;5;244m│[0m                               script
+[38;5;244m│[0m   -C, --conditions=...        additional user conditions for
+[38;5;244m│[0m                               conditional exports and imports
+[38;5;244m│[0m   --cpu-prof                  Start the V8 CPU profiler on start up,
+[38;5;244m│[0m                               and write the CPU profile to disk
+[38;5;244m│[0m                               before exit. If --cpu-prof-dir is not
+[38;5;244m│[0m                               specified, write the profile to the
+[38;5;244m│[0m                               current working directory.
+[38;5;244m│[0m   --cpu-prof-dir=...          Directory where the V8 profiles
+[38;5;244m│[0m                               generated by --cpu-prof will be placed.
+[38;5;244m│[0m                               Does not affect --prof.
+[38;5;244m│[0m   --cpu-prof-interval=...     specified sampling interval in
+[38;5;244m│[0m                               microseconds for the V8 CPU profile
+[38;5;244m│[0m                               generated with --cpu-prof. (default:
+[38;5;244m│[0m                               1000)
+[38;5;244m│[0m   --cpu-prof-name=...         specified file name of the V8 CPU
+[38;5;244m│[0m                               profile generated with --cpu-prof
+[38;5;244m│[0m   --diagnostic-dir=...        set dir for all output files (default:
+[38;5;244m│[0m                               current working directory)
+[38;5;244m│[0m   --disable-proto=...         disable Object.prototype.__proto__
+[38;5;244m│[0m   --disable-sigusr1           Disable inspector thread to be
+[38;5;244m│[0m                               listening for SIGUSR1 signal
+[38;5;244m│[0m   --disable-warning=...       silence specific process warnings
+[38;5;244m│[0m   --disable-wasm-trap-handler Disable trap-handler-based WebAssembly
+[38;5;244m│[0m                               bound checks. V8 will insert inline
+[38;5;244m│[0m                               bound checks when compiling WebAssembly
+[38;5;244m│[0m                               which may slow down performance.
+[38;5;244m│[0m   --disallow-code-generation-from-strings
+[38;5;244m│[0m                               disallow eval and friends
+[38;5;244m│[0m   --dns-result-order=...      set default value of verbatim in
+[38;5;244m│[0m                               dns.lookup. Options are 'ipv4first'
+[38;5;244m│[0m                               (IPv4 addresses are placed before IPv6
+[38;5;244m│[0m                               addresses) 'ipv6first' (IPv6 addresses
+[38;5;244m│[0m                               are placed before IPv4 addresses)
+[38;5;244m│[0m                               'verbatim' (addresses are in the order
+[38;5;244m│[0m                               the DNS resolver returned)
+[38;5;244m│[0m   --enable-etw-stack-walking  provides heap data to ETW Windows
+[38;5;244m│[0m                               native tracing
+[38;5;244m│[0m   --enable-fips               enable FIPS crypto at startup
+[38;5;244m│[0m   --enable-source-maps        Source Map V3 support for stack traces
+[38;5;244m│[0m   --entry-url                 Treat the entrypoint as a URL
+[38;5;244m│[0m   --env-file=...              set environment variables from supplied
+[38;5;244m│[0m                               file
+[38;5;244m│[0m   --env-file-if-exists=...    set environment variables from supplied
+[38;5;244m│[0m                               file
+[38;5;244m│[0m   -e, --eval=...              evaluate script
+[38;5;244m│[0m   --experimental-addon-modules
+[38;5;244m│[0m                               experimental import support for addons
+[38;5;244m│[0m                               (currently set)
+[38;5;244m│[0m   --experimental-default-config-file, --experimental-config-file=...
+[38;5;244m│[0m                               set config file path
+[38;5;244m│[0m   --experimental-eventsource  experimental EventSource API
+[38;5;244m│[0m   --experimental-ffi          experimental node:ffi module
+[38;5;244m│[0m   --experimental-import-meta-resolve
+[38;5;244m│[0m                               experimental ES Module
+[38;5;244m│[0m                               import.meta.resolve() parentURL support
+[38;5;244m│[0m   --experimental-import-text  experimental support for importing
+[38;5;244m│[0m                               source as text with import attributes
+[38;5;244m│[0m   --experimental-inspector-network-resource
+[38;5;244m│[0m                               experimental load network resources via
+[38;5;244m│[0m                               the inspector
+[38;5;244m│[0m   --loader, --experimental-loader=...
+[38;5;244m│[0m                               use the specified module as a custom
+[38;5;244m│[0m                               loader
+[38;5;244m│[0m   --experimental-network-inspection
+[38;5;244m│[0m                               experimental network inspection support
+[38;5;244m│[0m   --experimental-package-map=...
+[38;5;244m│[0m                               use the specified file for package map
+[38;5;244m│[0m                               resolution
+[38;5;244m│[0m   --experimental-print-required-tla
+[38;5;244m│[0m                               Print pending top-level await. If
+[38;5;244m│[0m                               --require-module is true, evaluate
+[38;5;244m│[0m                               asynchronous graphs loaded by
+[38;5;244m│[0m                               `require()` but do not run the
+[38;5;244m│[0m                               microtasks, in order to find and print
+[38;5;244m│[0m                               top-level await in the graph
+[38;5;244m│[0m   --experimental-sea-config=...
+[38;5;244m│[0m                               Generate a blob that can be embedded
+[38;5;244m│[0m                               into the single executable application
+[38;5;244m│[0m   --experimental-storage-inspection
+[38;5;244m│[0m                               experimental storage inspection support
+[38;5;244m│[0m   --experimental-stream-iter  experimental iterable streams API
+[38;5;244m│[0m                               (node:stream/iter)
+[38;5;244m│[0m   --experimental-test-coverage
+[38;5;244m│[0m                               enable code coverage in the test runner
+[38;5;244m│[0m   --experimental-test-module-mocks
+[38;5;244m│[0m                               enable module mocking in the test
+[38;5;244m│[0m                               runner
+[38;5;244m│[0m   --experimental-test-tag-filter=...
+[38;5;244m│[0m                               run tests matching the given tag filter
+[38;5;244m│[0m                               expression
+[38;5;244m│[0m   --experimental-vfs          experimental node:vfs module
+[38;5;244m│[0m   --experimental-vm-modules   experimental ES Module support in vm
+[38;5;244m│[0m                               module
+[38;5;244m│[0m   --experimental-worker-inspection
+[38;5;244m│[0m                               experimental worker inspection support
+[38;5;244m│[0m   --expose-gc                 expose gc extension
+[38;5;244m│[0m   --force-context-aware       disable loading non-context-aware
+[38;5;244m│[0m                               addons
+[38;5;244m│[0m   --force-fips                force FIPS crypto (cannot be disabled)
+[38;5;244m│[0m   --force-node-api-uncaught-exceptions-policy
+[38;5;244m│[0m                               enforces 'uncaughtException' event on
+[38;5;244m│[0m                               Node API asynchronous callbacks
+[38;5;244m│[0m   --frozen-intrinsics         experimental frozen intrinsics support
+[38;5;244m│[0m   --heap-prof                 Start the V8 heap profiler on start up,
+[38;5;244m│[0m                               and write the heap profile to disk
+[38;5;244m│[0m                               before exit. If --heap-prof-dir is not
+[38;5;244m│[0m                               specified, write the profile to the
+[38;5;244m│[0m                               current working directory.
+[38;5;244m│[0m   --heap-prof-dir=...         Directory where the V8 heap profiles
+[38;5;244m│[0m                               generated by --heap-prof will be
+[38;5;244m│[0m                               placed.
+[38;5;244m│[0m   --heap-prof-interval=...    specified sampling interval in bytes
+[38;5;244m│[0m                               for the V8 heap profile generated with
+[38;5;244m│[0m                               --heap-prof. (default: 512 * 1024)
+[38;5;244m│[0m   --heap-prof-name=...        specified file name of the V8 heap
+[38;5;244m│[0m                               profile generated with --heap-prof
+[38;5;244m│[0m   --heapsnapshot-near-heap-limit=...
+[38;5;244m│[0m                               Generate heap snapshots whenever V8 is
+[38;5;244m│[0m                               approaching the heap limit. No more
+[38;5;244m│[0m                               than the specified number of heap
+[38;5;244m│[0m                               snapshots will be generated.
+[38;5;244m│[0m   --heapsnapshot-signal=...   Generate heap snapshot on specified
+[38;5;244m│[0m                               signal
+[38;5;244m│[0m   -h, --help                  print node command line options
+[38;5;244m│[0m                               (currently set)
+[38;5;244m│[0m   --icu-data-dir=...          set ICU data load path to dir
+[38;5;244m│[0m                               (overrides NODE_ICU_DATA) (note:
+[38;5;244m│[0m                               linked-in ICU data is present)
+[38;5;244m│[0m   --import=...                ES module to preload (option can be
+[38;5;244m│[0m                               repeated)
+[38;5;244m│[0m   --input-type=...            set module type for string input
+[38;5;244m│[0m   --insecure-http-parser      use an insecure HTTP parser that
+[38;5;244m│[0m                               accepts invalid HTTP headers
+[38;5;244m│[0m   --inspect[=[host:]port]     activate inspector on host:port
+[38;5;244m│[0m                               (default: 127.0.0.1:9229)
+[38;5;244m│[0m   --inspect-brk[=[host:]port] activate inspector on host:port and
+[38;5;244m│[0m                               break at start of user script
+[38;5;244m│[0m   --debug-port, --inspect-port=[host:]port
+[38;5;244m│[0m                               set host:port for inspector
+[38;5;244m│[0m   --inspect-publish-uid=...   comma separated list of destinations
+[38;5;244m│[0m                               for inspector uid(default: stderr,http)
+[38;5;244m│[0m   --inspect-wait[=[host:]port]
+[38;5;244m│[0m                               activate inspector on host:port and
+[38;5;244m│[0m                               wait for debugger to be attached
+[38;5;244m│[0m   -i, --interactive           always enter the REPL even if stdin
+[38;5;244m│[0m                               does not appear to be a terminal
+[38;5;244m│[0m   --interpreted-frames-native-stack
+[38;5;244m│[0m                               help system profilers to translate
+[38;5;244m│[0m                               JavaScript interpreted frames
+[38;5;244m│[0m   --jitless                   disable runtime allocation of
+[38;5;244m│[0m                               executable memory
+[38;5;244m│[0m   --localstorage-file=...     file used to persist localStorage data
+[38;5;244m│[0m   --max-http-header-size=...  set the maximum size of HTTP headers
+[38;5;244m│[0m                               (default: 16384 (16KB))
+[38;5;244m│[0m   --max-old-space-size-percentage=...
+[38;5;244m│[0m                               set V8's max old space size as a
+[38;5;244m│[0m                               percentage of available memory (e.g.,
+[38;5;244m│[0m                               '50%'). Takes precedence over
+[38;5;244m│[0m                               --max-old-space-size.
+[38;5;244m│[0m   --network-family-autoselection-attempt-timeout=...
+[38;5;244m│[0m                               Sets the default value for the network
+[38;5;244m│[0m                               family autoselection attempt timeout.
+[38;5;244m│[0m   --no-addons                 disable loading native addons
+[38;5;244m│[0m   --no-async-context-frame    Improve AsyncLocalStorage performance
+[38;5;244m│[0m                               with AsyncContextFrame
+[38;5;244m│[0m   --no-deprecation            silence deprecation warnings
+[38;5;244m│[0m   --no-experimental-detect-module
+[38;5;244m│[0m                               when ambiguous modules fail to evaluate
+[38;5;244m│[0m                               because they contain ES module syntax,
+[38;5;244m│[0m                               try again to evaluate them as ES
+[38;5;244m│[0m                               modules
+[38;5;244m│[0m   --no-experimental-global-navigator
+[38;5;244m│[0m                               expose experimental Navigator API on
+[38;5;244m│[0m                               the global scope
+[38;5;244m│[0m   --no-experimental-repl-await
+[38;5;244m│[0m                               experimental await keyword support in
+[38;5;244m│[0m                               REPL
+[38;5;244m│[0m   --no-experimental-require-module
+[38;5;244m│[0m                               Legacy alias for --require-module
+[38;5;244m│[0m   --no-experimental-sqlite    experimental node:sqlite module
+[38;5;244m│[0m   --no-experimental-websocket experimental WebSocket API
+[38;5;244m│[0m   --webstorage, --no-experimental-webstorage
+[38;5;244m│[0m                               experimental Web Storage API
+[38;5;244m│[0m   --no-extra-info-on-fatal-exception
+[38;5;244m│[0m                               hide extra information on fatal
+[38;5;244m│[0m                               exception that causes exit
+[38;5;244m│[0m   --no-force-async-hooks-checks
+[38;5;244m│[0m                               disable checks for async_hooks
+[38;5;244m│[0m   --no-global-search-paths    disable global module search paths
+[38;5;244m│[0m   --enable-network-family-autoselection, --no-network-family-autoselection
+[38;5;244m│[0m                               Disable network address family
+[38;5;244m│[0m                               autodetection algorithm
+[38;5;244m│[0m   --no-require-module         Allow loading synchronous ES Modules in
+[38;5;244m│[0m                               require().
+[38;5;244m│[0m   --experimental-strip-types, --no-strip-types
+[38;5;244m│[0m                               Type-stripping for TypeScript files.
+[38;5;244m│[0m   --no-warnings               silence all process warnings
+[38;5;244m│[0m   --node-memory-debug         Run with extra debug checks for memory
+[38;5;244m│[0m                               leaks in Node.js itself
+[38;5;244m│[0m   --openssl-config=...        load OpenSSL configuration from the
+[38;5;244m│[0m                               specified file (overrides OPENSSL_CONF)
+[38;5;244m│[0m   --openssl-legacy-provider   enable OpenSSL 3.0 legacy provider
+[38;5;244m│[0m   --openssl-shared-config     enable OpenSSL shared configuration
+[38;5;244m│[0m   --pending-deprecation       emit pending deprecation warnings
+[38;5;244m│[0m   --permission                enable the permission system
+[38;5;244m│[0m   --permission-audit          enable audit only for the permission
+[38;5;244m│[0m                               system
+[38;5;244m│[0m   --preserve-symlinks         preserve symbolic links when resolving
+[38;5;244m│[0m   --preserve-symlinks-main    preserve symbolic links when resolving
+[38;5;244m│[0m                               the main module
+[38;5;244m│[0m   -p, --print [...]           evaluate script and print result
+[38;5;244m│[0m   --prof                      Generate V8 profiler output.
+[38;5;244m│[0m   --prof-process              process V8 profiler output generated
+[38;5;244m│[0m                               using --prof
+[38;5;244m│[0m   --redirect-warnings=...     write warnings to file instead of
+[38;5;244m│[0m                               stderr
+[38;5;244m│[0m   --report-compact            output compact single-line JSON
+[38;5;244m│[0m   --report-directory, --report-dir=...
+[38;5;244m│[0m                               define custom report pathname.
+[38;5;244m│[0m                               (default: current working directory)
+[38;5;244m│[0m   --report-exclude-env        Exclude environment variables when
+[38;5;244m│[0m                               generating report (default: false)
+[38;5;244m│[0m   --report-exclude-network    exclude network interface diagnostics.
+[38;5;244m│[0m                               (default: false)
+[38;5;244m│[0m   --report-filename=...       define custom report file name.
+[38;5;244m│[0m                               (default:
+[38;5;244m│[0m                               YYYYMMDD.HHMMSS.PID.SEQUENCE#.txt)
+[38;5;244m│[0m   --report-on-fatalerror      generate diagnostic report on fatal
+[38;5;244m│[0m                               (internal) errors
+[38;5;244m│[0m   --report-on-signal          generate diagnostic report upon
+[38;5;244m│[0m                               receiving signals
+[38;5;244m│[0m   --report-signal=...         causes diagnostic report to be produced
+[38;5;244m│[0m                               on provided signal, unsupported in
+[38;5;244m│[0m                               Windows. (default: SIGUSR2)
+[38;5;244m│[0m   --report-uncaught-exception generate diagnostic report on uncaught
+[38;5;244m│[0m                               exceptions
+[38;5;244m│[0m   -r, --require=...           CommonJS module to preload (option can
+[38;5;244m│[0m                               be repeated)
+[38;5;244m│[0m   --run=...                   Run a script specified in package.json
+[38;5;244m│[0m   --secure-heap=...           total size of the OpenSSL secure heap
+[38;5;244m│[0m   --secure-heap-min=...       minimum allocation size from the
+[38;5;244m│[0m                               OpenSSL secure heap
+[38;5;244m│[0m   --snapshot-blob=...         Path to the snapshot blob that's either
+[38;5;244m│[0m                               the result of snapshotbuilding, or the
+[38;5;244m│[0m                               blob that is used to restore the
+[38;5;244m│[0m                               application state
+[38;5;244m│[0m   --test                      launch test runner on startup
+[38;5;244m│[0m   --test-concurrency=...      specify test runner concurrency
+[38;5;244m│[0m   --test-coverage-branches=...
+[38;5;244m│[0m                               the branch coverage minimum threshold
+[38;5;244m│[0m   --test-coverage-exclude=... exclude files from coverage report that
+[38;5;244m│[0m                               match this glob pattern
+[38;5;244m│[0m   --test-coverage-functions=...
+[38;5;244m│[0m                               the function coverage minimum threshold
+[38;5;244m│[0m   --test-coverage-include=... include files in coverage report that
+[38;5;244m│[0m                               match this glob pattern
+[38;5;244m│[0m   --test-coverage-include-all include source files that were never
+[38;5;244m│[0m                               loaded in the coverage report
+[38;5;244m│[0m   --test-coverage-lines=...   the line coverage minimum threshold
+[38;5;244m│[0m   --test-force-exit           force test runner to exit upon
+[38;5;244m│[0m                               completion
+[38;5;244m│[0m   --test-global-setup=...     specifies the path to the global setup
+[38;5;244m│[0m                               file
+[38;5;244m│[0m   --experimental-test-isolation, --test-isolation=...
+[38;5;244m│[0m                               configures the type of test isolation
+[38;5;244m│[0m                               used in the test runner
+[38;5;244m│[0m   --test-name-pattern=...     run tests whose name matches this
+[38;5;244m│[0m                               regular expression
+[38;5;244m│[0m   --test-only                 run tests with 'only' option set
+[38;5;244m│[0m   --test-random-seed=...      seed used to randomize test execution
+[38;5;244m│[0m                               order
+[38;5;244m│[0m   --test-randomize            run tests in a random order
+[38;5;244m│[0m   --test-reporter=...         report test output using the given
+[38;5;244m│[0m                               reporter
+[38;5;244m│[0m   --test-reporter-destination=...
+[38;5;244m│[0m                               report given reporter to the given
+[38;5;244m│[0m                               destination
+[38;5;244m│[0m   --test-rerun-failures=...   specifies the path to the rerun state
+[38;5;244m│[0m                               file
+[38;5;244m│[0m   --test-shard=...            run test at specific shard
+[38;5;244m│[0m   --test-skip-pattern=...     run tests whose name do not match this
+[38;5;244m│[0m                               regular expression
+[38;5;244m│[0m   --test-timeout=...          specify test runner timeout
+[38;5;244m│[0m   --test-update-snapshots     regenerate test snapshots
+[38;5;244m│[0m   --throw-deprecation         throw an exception on deprecations
+[38;5;244m│[0m   --title=...                 the process title to use on startup
+[38;5;244m│[0m   --tls-cipher-list=...       use an alternative default TLS cipher
+[38;5;244m│[0m                               list
+[38;5;244m│[0m   --tls-keylog=...            log TLS decryption keys to named file
+[38;5;244m│[0m                               for traffic analysis
+[38;5;244m│[0m   --tls-max-v1.2              set default TLS maximum to TLSv1.2
+[38;5;244m│[0m                               (default: TLSv1.3)
+[38;5;244m│[0m   --tls-max-v1.3              set default TLS maximum to TLSv1.3
+[38;5;244m│[0m                               (default: TLSv1.3)
+[38;5;244m│[0m   --tls-min-v1.0              set default TLS minimum to TLSv1.0
+[38;5;244m│[0m                               (default: TLSv1.2)
+[38;5;244m│[0m   --tls-min-v1.1              set default TLS minimum to TLSv1.1
+[38;5;244m│[0m                               (default: TLSv1.2)
+[38;5;244m│[0m   --tls-min-v1.2              set default TLS minimum to TLSv1.2
+[38;5;244m│[0m                               (default: TLSv1.2)
+[38;5;244m│[0m   --tls-min-v1.3              set default TLS minimum to TLSv1.3
+[38;5;244m│[0m                               (default: TLSv1.2)
+[38;5;244m│[0m   --trace-deprecation         show stack traces on deprecations
+[38;5;244m│[0m   --trace-env                 Print accesses to the environment
+[38;5;244m│[0m                               variables
+[38;5;244m│[0m   --trace-env-js-stack        Print accesses to the environment
+[38;5;244m│[0m                               variables and the JavaScript stack
+[38;5;244m│[0m                               trace
+[38;5;244m│[0m   --trace-env-native-stack    Print accesses to the environment
+[38;5;244m│[0m                               variables and the native stack trace
+[38;5;244m│[0m   --trace-event-categories=...
+[38;5;244m│[0m                               comma separated list of trace event
+[38;5;244m│[0m                               categories to record
+[38;5;244m│[0m   --trace-event-file-pattern=...
+[38;5;244m│[0m                               Template string specifying the filepath
+[38;5;244m│[0m                               for the trace-events data, it supports
+[38;5;244m│[0m                               ${rotation} and ${pid}.
+[38;5;244m│[0m   --trace-exit                show stack trace when an environment
+[38;5;244m│[0m                               exits
+[38;5;244m│[0m   --trace-promises            show stack traces on promise
+[38;5;244m│[0m                               initialization and resolution
+[38;5;244m│[0m   --trace-require-module=...  Print access to require(esm). Options
+[38;5;244m│[0m                               are 'all' (print all usage) and
+[38;5;244m│[0m                               'no-node-modules' (excluding usage from
+[38;5;244m│[0m                               the node_modules folder)
+[38;5;244m│[0m   --trace-sigint              enable printing JavaScript stacktrace
+[38;5;244m│[0m                               on SIGINT
+[38;5;244m│[0m   --trace-sync-io             show stack trace when use of sync IO is
+[38;5;244m│[0m                               detected after the first tick
+[38;5;244m│[0m   --trace-tls                 prints TLS packet trace information to
+[38;5;244m│[0m                               stderr
+[38;5;244m│[0m   --trace-uncaught            show stack traces for the `throw`
+[38;5;244m│[0m                               behind uncaught exceptions
+[38;5;244m│[0m   --trace-warnings            show stack traces on process warnings
+[38;5;244m│[0m   --track-heap-objects        track heap object allocations for heap
+[38;5;244m│[0m                               snapshots
+[38;5;244m│[0m   --unhandled-rejections=...  define unhandled rejections behavior.
+[38;5;244m│[0m                               Options are 'strict' (always raise an
+[38;5;244m│[0m                               error), 'throw' (raise an error unless
+[38;5;244m│[0m                               'unhandledRejection' hook is set),
+[38;5;244m│[0m                               'warn' (log a warning), 'none' (silence
+[38;5;244m│[0m                               warnings), 'warn-with-error-code' (log
+[38;5;244m│[0m                               a warning and set exit code 1 unless
+[38;5;244m│[0m                               'unhandledRejection' hook is set).
+[38;5;244m│[0m                               (default: throw)
+[38;5;244m│[0m   --use-bundled-ca            use bundled CA store
+[38;5;244m│[0m   --use-env-proxy             parse proxy settings from
+[38;5;244m│[0m                               HTTP_PROXY/HTTPS_PROXY/NO_PROXYenvironment
+[38;5;244m│[0m                               variables and apply the setting in
+[38;5;244m│[0m                               global HTTP/HTTPS clients
+[38;5;244m│[0m   --use-largepages=...        Map the Node.js static code to large
+[38;5;244m│[0m                               pages. Options are 'off' (the default
+[38;5;244m│[0m                               value, meaning do not map), 'on' (map
+[38;5;244m│[0m                               and ignore failure, reporting it to
+[38;5;244m│[0m                               stderr), or 'silent' (map and silently
+[38;5;244m│[0m                               ignore failure)
+[38;5;244m│[0m   --use-openssl-ca            use OpenSSL's default CA store
+[38;5;244m│[0m                               (default)
+[38;5;244m│[0m   --use-system-ca             use system's CA store
+[38;5;244m│[0m   --v8-options                print V8 command line options
+[38;5;244m│[0m   --v8-pool-size=...          set V8's thread pool size
+[38;5;244m│[0m   -v, --version               print Node.js version
+[38;5;244m│[0m   --watch                     run in watch mode
+[38;5;244m│[0m   --watch-kill-signal=...     kill signal to send to the process on
+[38;5;244m│[0m                               watch mode restarts(default: SIGTERM)
+[38;5;244m│[0m   --watch-path=...            path to watch
+[38;5;244m│[0m   --watch-preserve-output     preserve outputs on watch mode restart
+[38;5;244m│[0m   --zero-fill-buffers         automatically zero-fill all newly
+[38;5;244m│[0m                               allocated Buffer instances
+[38;5;244m│[0m   
+[38;5;244m│[0m Environment variables:
+[38;5;244m│[0m FORCE_COLOR                 when set to 'true', 1, 2, 3, or an
+[38;5;244m│[0m                             empty string causes NO_COLOR and
+[38;5;244m│[0m                             NODE_DISABLE_COLORS to be ignored.
+[38;5;244m│[0m NO_COLOR                    Alias for NODE_DISABLE_COLORS
+[38;5;244m│[0m NODE_DEBUG                  ','-separated list of core modules that
+[38;5;244m│[0m                             should print debug information
+[38;5;244m│[0m NODE_DEBUG_NATIVE           ','-separated list of C++ core debug
+[38;5;244m│[0m                             categories that should print debug
+[38;5;244m│[0m                             output
+[38;5;244m│[0m NODE_DISABLE_COLORS         set to 1 to disable colors in the REPL
+[38;5;244m│[0m NODE_EXTRA_CA_CERTS         path to additional CA certificates
+[38;5;244m│[0m                             file. Only read once during process
+[38;5;244m│[0m                             startup.
+[38;5;244m│[0m NODE_NO_WARNINGS            set to 1 to silence process warnings
+[38;5;244m│[0m NODE_PATH                   ':'-separated list of directories
+[38;5;244m│[0m                             prefixed to the module search path
+[38;5;244m│[0m NODE_PENDING_DEPRECATION    set to 1 to emit pending deprecation
+[38;5;244m│[0m                             warnings
+[38;5;244m│[0m NODE_PENDING_PIPE_INSTANCES set the number of pending pipe instance
+[38;5;244m│[0m                             handles on Windows
+[38;5;244m│[0m NODE_PRESERVE_SYMLINKS      set to 1 to preserve symbolic links
+[38;5;244m│[0m                             when resolving and caching modules
+[38;5;244m│[0m NODE_REDIRECT_WARNINGS      write warnings to path instead of
+[38;5;244m│[0m                             stderr
+[38;5;244m│[0m NODE_REPL_EXTERNAL_MODULE   path to a Node.js module which will be
+[38;5;244m│[0m                             loaded in place of the built-in REPL
+[38;5;244m│[0m NODE_REPL_HISTORY           path to the persistent REPL history
+[38;5;244m│[0m                             file
+[38;5;244m│[0m NODE_SKIP_PLATFORM_CHECK    set to 1 to skip the check for a
+[38;5;244m│[0m                             supported platform during Node.js
+[38;5;244m│[0m                             startup
+[38;5;244m│[0m NODE_TLS_REJECT_UNAUTHORIZED
+[38;5;244m│[0m                             set to 0 to disable TLS certificate
+[38;5;244m│[0m                             validation
+[38;5;244m│[0m NODE_V8_COVERAGE            directory to output v8 coverage JSON to
+[38;5;244m│[0m TZ                          specify the timezone configuration
+[38;5;244m│[0m UV_THREADPOOL_SIZE          sets the number of threads used in
+[38;5;244m│[0m                             libuv's threadpool
+[38;5;244m│[0m
+[38;5;244m│[0m Documentation can be found at https://nodejs.org/
+::endgroup::
+● The bug was an off-by-one in [1;36msrc/sum.js[22;39m. The loop used [1;36mi <= values.length[22;39m, which added [1;36mundefined[22;39m and returned [1;36mNaN[22;39m, and changing it to [1;36mi < values.length[22;39m made [1;36mnpm test[22;39m pass. The two parallel sleeps and [1;36mnode --help[22;39m also ran as requested, with the full help output shown above.
+[32m✻ success · 9 turns · 15s · $0.08[0m

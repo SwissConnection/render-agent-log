@@ -1,0 +1,17 @@
+[38;5;244m✻ claude-sonnet-5 · /home/runner/work/demo/demo[0m
+[32m●[0m [1mGlob[22m(src/**/*)
+[38;5;244m│[0m [38;5;244msrc/greet.js[0m
+[38;5;244m│[0m [38;5;244msrc/sum.test.js[0m
+[38;5;244m└[0m [38;5;244msrc/sum.js[0m
+[32m●[0m [1mRead[22m(src/greet.js)
+[38;5;244m│[0m [38;5;244m1	export function greet(name) {[0m
+[38;5;244m│[0m [38;5;244m2	  return "Hello, " + name + "!";[0m
+[38;5;244m└[0m [38;5;244m3	}[0m
+::group::[38;5;244m… 4 lines[0m
+[38;5;244m│[0m 1	export function greet(name) {
+[38;5;244m│[0m 2	  return "Hello, " + name + "!";
+[38;5;244m│[0m 3	}
+[38;5;244m│[0m 4	
+::endgroup::
+[31m✻ error_max_turns · 3 turns · 3s · $0.02[0m
+[38;5;244m└[0m [31mReached maximum number of turns (2)[0m

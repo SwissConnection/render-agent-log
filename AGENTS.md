@@ -45,6 +45,9 @@ Node 24 (the Action's runtime), npm. `npm ci` after `git worktree add`.
 | `npm test` | Vitest, once |
 | `npm run build` | esbuild bundles `src/index.ts` to `dist/index.js` |
 
+`node src/index.ts fixtures/claude/<name>.jsonl` renders a fixture in the terminal. The golden files
+in `test/golden/` hold each fixture's rendering; `npx vitest run -u` rewrites them, so read the diff.
+
 CI (`.github/workflows/ci.yml`) runs all but `fix`, and fails when `dist/` differs from a fresh build,
 so commit `dist/` with every source change. The SDK is imported with `import type` only; nothing of it
 may reach `dist/`. When an SDK bump fails the typecheck, a message type changed (rule 1).
@@ -55,8 +58,10 @@ may reach `dist/`. When an SDK bump fails the typecheck, a message type changed 
    (`SDKMessage`), not by what one sample run happened to contain. The renderer switches exhaustively
    over them. A new message type gets a rendering or an explicit drop, decided in its own PR. At
    runtime an unknown type prints one gray line; it never crashes and is never dropped silently.
-2. **Tool output is untrusted.** The runner executes any line whose first non-whitespace characters are
-   `::`. Every block of tool output goes through the `stop-commands` wrapper; nothing prints it raw.
+2. **Untrusted text never starts a line.** The runner executes a line that starts with `::` after
+   whitespace or holds `##[` anywhere, and it ends lines at `\r` too. Tool output, call arguments and
+   agent text go through `src/text.ts`, and every line but `::group::` / `::endgroup::` starts with a
+   character the renderer owns, folded output included. Nothing prints them raw.
 3. **A result always sits under its own call**, including parallel calls and subagents.
 4. **Live first.** Flush after every message; nothing may buffer a whole run.
 5. **Workflows that run Claude trigger only on `push` or `workflow_dispatch`.** This repository is

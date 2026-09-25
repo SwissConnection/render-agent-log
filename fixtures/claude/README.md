@@ -5,14 +5,14 @@ hand-made stream of hostile tool output. The renderer's golden files and targete
 
 | File | Covers |
 |---|---|
-| `edit-and-bash.jsonl` | Two parallel Reads; `npm test` failing (`is_error`, red); an Edit with `structuredPatch`; two parallel Bash calls whose results arrive in reverse order (`fast done` before `slow done`); `node --help`, 465 lines of stdout; `task_started` / `task_notification` for a Bash call |
+| `edit-and-bash.jsonl` | Two parallel Reads; `npm test` failing (`is_error`, red); an Edit with `structuredPatch`; two parallel Bash calls whose results arrive in reverse order (`fast done` before `slow done`); `node --help`, 451 lines of stdout; `task_started` / `task_notification` for a Bash call |
 | `subagent.jsonl` | One foreground Agent call: the subagent's prompt, its Grep and Glob calls and their results carry `parent_tool_use_id`, then the Agent's own result under the top-level call |
 | `subagents-background.jsonl` | Two parallel Agent calls that the CLI ran in the background: each call's result is only "Async agent launched", the two subagents' messages interleave, and the run emits three `system/init` + `result` pairs as the session resumes after each `task_notification`. Also two `thinking` blocks with empty text and only a signature, and `background_tasks_changed` / `task_updated` |
 | `thinking.jsonl` | Captured with `--thinking-display summarized`: a `thinking` block with text, a Read, the answer, and a run of `system/thinking_tokens` |
 | `max-turns.jsonl` | `--max-turns 2`: the final `result` is `error_max_turns` with `is_error: true` and `errors` |
 | `hostile-output.jsonl` | Hand-made (see below) |
 
-Shapes worth knowing before writing the renderer:
+Shapes worth knowing:
 
 - Each content block arrives as its own `assistant` message; blocks of one API response share
   `message.id`. Parallel calls show up as consecutive `tool_use` messages with one `message.id`, and a
@@ -37,12 +37,16 @@ only the ids, timestamps and tool output are made up. None of it may reach the l
   hyperlink, cursor movement, clear screen, private modes, DCS and 8-bit C1 CSI (must be stripped).
   Several put a command at the start of the line once the escape is removed, one sits behind an SGR
   code, and one sits behind a bare carriage return, which .NET's `ReadLine` treats as a line break
+- In the same stdout, legacy `##[command]` syntax, which the runner parses anywhere in a line: one at
+  the start of a line, one in the middle
 - A failed Bash call with the commands in stderr, and its string `tool_use_result`
 - A multi-line Bash `command` input whose second line is `::add-mask::…`, for the one-line call header
 - A Read whose numbered `content` hides the commands behind line numbers while
   `tool_use_result.file.content` does not
 - A subagent's WebFetch of a page with commands in it; the subagent's text repeats them, and the Agent
   hand-back repeats them indented by two spaces, which still counts as the start of a line
+- The agent's final text, on the top level, with a command and a legacy one on indented continuation
+  lines
 
 ## Capturing
 
