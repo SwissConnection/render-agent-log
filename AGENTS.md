@@ -12,6 +12,21 @@ without being told. What to build and why is in [docs/spec.md](docs/spec.md).
 - **Consumer:** [SwissConnection/swissconn-workspace](https://github.com/SwissConnection/swissconn-workspace)
   runs Claude in three workflows. It is the first user, not the only one.
 
+## Worktrees
+
+A bare hub, laid out like swissconn-workspace's but with no scripts:
+
+```text
+render-agent-log-wt/
+  .bare/          # the repository
+  main/           # locked; kept on origin/main (git pull --ff-only)
+  <n>-<slug>/     # one worktree per issue, branch <n>-<slug>
+```
+
+- New issue tree, from the hub: `git fetch origin && git worktree add <n>-<slug> -b <n>-<slug> origin/main`, then install dependencies in it
+- After the PR merges: `git worktree remove <n>-<slug> && git branch -D <n>-<slug>`
+- No secrets or caches live in a tree, so there is nothing to link or inject
+
 ## Commands
 
 None yet. The v0.1 scaffold issue adds TypeScript, Biome, Vitest and esbuild, and puts its command
