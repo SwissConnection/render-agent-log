@@ -65,10 +65,10 @@ Rules:
 4. Output is flushed per message, so the live log keeps pace with the agent.
 5. Secrets: this adds no exposure beyond `show_full_output`, and GitHub still masks them verbatim.
    The README says so plainly.
-6. **The renderer's own colors adapt to the theme.** The log maps the named colors to a shade per
-   theme, so the renderer uses only gray (90), red, green, cyan, bold and italic. It never uses black
-   or white, which disappear on one theme, or dim, which the log renders as normal text. It also
-   never sets backgrounds or 256-color and truecolor codes, which keep one shade on both themes.
+6. **The renderer's own colors adapt to the theme.** The log gives each of the 16 named colors a
+   shade per theme, so the renderer uses only those, plus bold and italic, and no 256-color or
+   truecolor codes, whose shades are fixed. It never uses black (30), which is hard to read on the
+   dark theme, or dim (2), which the log renders as normal text.
    Tool output keeps its own colors (rule 3).
 
 ## Packaging

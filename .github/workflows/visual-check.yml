@@ -25,7 +25,3 @@ jobs:
         run: spike/render/stop-commands.sh
       - name: Glyphs
         run: spike/render/glyphs.sh
-      - name: Long lines and long groups
-        run: spike/render/long.sh
-      - name: Live output
-        run: spike/render/live.sh

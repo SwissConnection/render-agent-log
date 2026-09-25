@@ -28,8 +28,8 @@ echo "== 256 colors and truecolor (tool output such as test runners emits these)
 printf '%s[38;5;208m256-color 208 (orange)%s[0m  %s[38;5;244m256-color 244 (gray)%s[0m\n' "$e" "$e" "$e" "$e"
 printf '%s[38;2;215;119;87mtruecolor 215,119,87%s[0m  %s[48;2;30;30;30;38;2;220;220;220m truecolor bg %s[0m\n' "$e" "$e" "$e" "$e"
 
-# Only named colors, so each theme picks its own shade. Never black (30), white (37, 97), dim (2),
-# backgrounds, or 256-color and truecolor: dim renders as normal, and the others vanish on one theme.
+# Only named colors, so each theme picks its own shade. Never black (30), which is hard to read on the
+# dark theme, or dim (2), which the log renders as normal text.
 echo "== The renderer's palette =="
 printf '%s[90m✻ claude-sonnet-5 · /home/runner/work/repo/repo%s[0m\n' "$e" "$e"
 printf '%s[32m●%s[0m %s[1mBash%s[0m(npm test)\n' "$e" "$e" "$e" "$e"
