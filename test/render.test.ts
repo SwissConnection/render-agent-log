@@ -1,6 +1,6 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { describe, expect, test } from "vitest";
-import { Renderer } from "../src/render.ts";
+import { Renderer, type StdoutMessage } from "../src/render.ts";
 import { fixture, liveCommands, render, visibleLines } from "./helpers.ts";
 
 const fixtures = [
@@ -125,4 +125,18 @@ describe("a message the build does not know", () => {
       "\x1b[38;5;244m· unrenderable assistant message (TypeError)\x1b[0m\n",
     );
   });
+});
+
+// The wrapper reads claude's stdout, where the SDK's control protocol travels with the messages.
+test("the control protocol prints nothing", () => {
+  const protocol = [
+    {
+      type: "control_response",
+      response: { subtype: "success", request_id: "req_1", response: {} },
+    },
+    { type: "control_request", request_id: "req_2", request: { subtype: "interrupt" } },
+    { type: "control_cancel_request", request_id: "req_2" },
+    { type: "keep_alive" },
+  ];
+  for (const message of protocol) expect(new Renderer().render(message as StdoutMessage)).toBe("");
 });

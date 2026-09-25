@@ -33,7 +33,9 @@ and outputs are in `sdk-tools.d.ts`, generated upstream from JSON Schema that is
 The renderer reads stdin, or the file named by its one argument. An input whose first non-blank line
 starts with `[` is an execution file, parsed whole; anything else is read line by line as it arrives.
 
-The renderer imports these types and switches exhaustively over `SDKMessage.type`. When a bump of
+The renderer imports these types and switches exhaustively over the type of what `claude` writes to
+stdout: `SDKMessage`, plus `active_goal` and the control protocol between the SDK and `claude`, which
+the wrapper sees (the SDK exports this union only as what a `Transport` reads). When a bump of
 the SDK adds a message type, `tsc` fails in that PR, and that failure is the work item.
 At runtime, a message the build did not know about prints as one gray `· <type>` line. It is never
 dropped silently and never crashes the renderer.
@@ -54,6 +56,8 @@ dropped silently and never crashes the renderer.
 | subagent messages (`parent_tool_use_id` set) | indented under the Agent call by a gray `│` per level |
 | `result` | `✻ <subtype> · N turns · Ns · $X` (green, or red on error with the `errors` under it). A line per `result`: a run with background subagents sends several. Turns and duration count per result, while `total_cost_usd` is the session's total so far |
 | `system/api_retry`, `compact_boundary`, `informational`, `notification`, `hook_response`, `local_command_output`, `model_refusal_*` | one line: yellow for a retry, a warning or a refusal fallback, red for a refusal or a failed hook, gray otherwise |
+| `active_goal` | gray `· goal: <condition> · N iterations · <last reason>`, or `· goal cleared` |
+| `control_request`, `control_response`, `control_cancel_request`, `keep_alive` | dropped: the control protocol between the SDK and `claude` |
 | `task_*`, `tool_progress`, `rate_limit_event`, `thinking_tokens`, `stream_event`, and the other progress and UI-state messages listed in `src/render.ts` | dropped: they are progress, not transcript |
 | anything else | gray `· <type>` (`· system/<subtype>`), also for a message the renderer fails to render |
 

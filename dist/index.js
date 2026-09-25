@@ -207,6 +207,11 @@ var foldedTone = {
   removed: red,
   hunk: gray
 };
+function goalNote({ value }) {
+  if (value === null) return "\xB7 goal cleared";
+  const reason = value.last_reason === void 0 ? "" : ` \xB7 ${value.last_reason}`;
+  return `\xB7 goal: ${value.condition} \xB7 ${value.iterations} iterations${reason}`;
+}
 var Renderer = class {
   #calls = /* @__PURE__ */ new Map();
   // The calls the last printed line sits under. A line for another call first repeats its header.
@@ -247,6 +252,15 @@ var Renderer = class {
       case "auth_status":
       case "conversation_reset":
         this.#note(gray, `\xB7 ${message.type}`);
+        break;
+      case "active_goal":
+        this.#note(gray, goalNote(message));
+        break;
+      // The control protocol: requests, answers and heartbeats between the SDK and claude.
+      case "control_request":
+      case "control_response":
+      case "control_cancel_request":
+      case "keep_alive":
         break;
       // Progress and UI state, not transcript.
       case "stream_event":
