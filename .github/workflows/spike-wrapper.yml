@@ -1,0 +1,73 @@
+# Spike (#2): live, rendered output from inside claude-code-action. The action runs spike/wrapper's
+# stand-in for claude, which tees the SDK's stream through a throwaway renderer into this step's log.
+# Runs Claude, so workflow_dispatch only (AGENTS.md rule 5).
+name: Spike wrapper
+
+on:
+  workflow_dispatch:
+    inputs:
+      render_dies:
+        description: The renderer exits inside its first stopped block
+        type: boolean
+        default: false
+      max_turns:
+        description: Turn budget; 1 ends the run in error_max_turns, so the action reports a failure
+        type: number
+        default: 4
+
+permissions:
+  contents: read
+
+jobs:
+  wrapper:
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # With path_to_claude_code_executable set, the action installs nothing, so this installs the
+      # version the action pins in src/entrypoints/run.ts (2.1.282 at v1.0.234).
+      - name: Install Claude Code
+        run: curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.282
+
+      - name: Claude through the wrapper
+        id: claude
+        uses: anthropics/claude-code-action@9171db3e57d6a3140a37ddc2ba92788584e0ead6 # v1.0.234
+        env:
+          SPIKE_RENDER_DIE: ${{ inputs.render_dies }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          path_to_claude_code_executable: ${{ github.workspace }}/spike/wrapper/bin/claude-wrapper
+          # Bash, not Read: Read numbers its lines, so injected commands would not start a line.
+          prompt: |
+            In a single message, make these two tool calls in parallel:
+            Bash `cat spike/wrapper/hostile-output.txt` and Read `README.md`.
+            Then reply with one short sentence. Do nothing else.
+          claude_args: |
+            --model haiku
+            --allowedTools "Bash,Read"
+            --max-turns ${{ inputs.max_turns }}
+
+      - name: After the action
+        if: always()
+        env:
+          CONCLUSION: ${{ steps.claude.outputs.conclusion }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          echo "::add-mask::control-after-action"
+          echo "control: control-after-action (prints *** when commands are live in this step)"
+          echo "injected: spike-wrapper-secret (prints in clear when the injected add-mask stayed inert)"
+          echo "action outputs: conclusion=${CONCLUSION:-unset} execution_file=${EXECUTION_FILE:-unset}"
+          # Every message the SDK recorded, byte for byte after normalizing, is in the wrapper's copy.
+          stream="$RUNNER_TEMP/claude-wrapper-stream.jsonl"
+          echo "wrapper copy: $(wc -l <"$stream") lines; execution file: $(jq length "$EXECUTION_FILE") messages"
+          missing=$(comm -23 <(jq -cS '.[]' "$EXECUTION_FILE" | sort) <(jq -cS . "$stream" | sort))
+          if [ -n "$missing" ]; then
+            echo "SDK messages the wrapper's copy lacks:"
+            echo "$missing" | cut -c1-200
+            exit 1
+          fi
+          echo "every SDK message is in the wrapper's copy"

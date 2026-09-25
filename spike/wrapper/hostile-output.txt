@@ -1,0 +1,9 @@
+::error::injected by tool output: must not become an annotation
+  ::warning::injected behind leading spaces: must not become an annotation
+::add-mask::spike-wrapper-secret
+::endgroup::
+still inside the group: the injected endgroup above did nothing
+::group::injected group
+::stop-commands::injected-token
+::injected-token::
+end of the tool output

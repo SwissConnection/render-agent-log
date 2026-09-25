@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Stand-in for claude, passed to claude-code-action as path_to_claude_code_executable. It runs the real
+# claude with the SDK's stdin, stdout and stderr untouched, and tees a copy of stdout through render.py
+# into the step's log. Linux only: it writes to the parent's stdout through /proc.
+#
+# Gotchas:
+# - The action prepends this directory to PATH, for the agent's Bash tool and for every later step.
+#   That is why the file is not called claude and sits alone in bin/.
+# - The action and the SDK also run this path for other subcommands (plugin install); only the SDK's
+#   query passes --output-format stream-json, so everything else goes straight to the real claude.
+set -euo pipefail
+
+real=${SPIKE_REAL_CLAUDE:-$HOME/.local/bin/claude}
+case " $* " in
+  *" --output-format stream-json "*) ;;
+  *) exec "$real" "$@" ;;
+esac
+
+spike=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# The SDK spawns this script from the action's bun process, whose stdout is the step's log.
+log=/proc/$PPID/fd/1
+own=$(readlink /proc/$$/fd/1)
+{
+  printf '\e[90mwrapper: pid %s, parent %s (%s), parent stdout %s, own stdout %s, render_dies=%s\e[0m\n' \
+    "$$" "$PPID" "$(ps -o comm= -p "$PPID")" "$(readlink "$log")" "$own" \
+    "${SPIKE_RENDER_DIE:-unset}"
+  # Ancestors by name only: argv carries the SDK's --mcp-config, token included.
+  pid=$$
+  while [ "$pid" -gt 1 ]; do
+    printf '\e[90m  %s\e[0m\n' "$(ps -o pid=,comm= -p "$pid")"
+    pid=$(ps -o ppid= -p "$pid" | tr -d ' ')
+  done
+} >"$log"
+
+# tee -p ignores SIGPIPE and drops an output whose reader went away, so a dead renderer cannot stop the
+# stream the SDK reads. The raw copy lets a later step compare what the SDK got with what was rendered.
+exec > >(tee -p "${RUNNER_TEMP:-/tmp}/claude-wrapper-stream.jsonl" \
+  >(python3 "$spike/render.py" >"$log" 2>&1) 2>"$log")
+# exec keeps this PID for the real claude, so the SDK's SIGTERM and exit code reach it, not a shell.
+exec "$real" "$@"
