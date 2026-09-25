@@ -1,0 +1,22 @@
+[90m✻ claude-sonnet-5 · /home/runner/work/demo/demo[0m
+[32m●[0m [1mRead[22m(src/sum.js)
+[90m│[0m [90m1	export function sum(values) {[0m
+[90m│[0m [90m2	  let total = 0;[0m
+[90m└[0m [90m3	  for (let i = 0; i <= values.length; i++) {[0m
+::group::[90m… 8 lines[0m
+::stop-commands::test-stop-token
+1	export function sum(values) {
+2	  let total = 0;
+3	  for (let i = 0; i <= values.length; i++) {
+4	    total += values[i];
+5	  }
+6	  return total;
+7	}
+8	
+::test-stop-token::
+::endgroup::
+[90m✻[0m [3;90mThe loop condition goes one past the array's last index, so it reads an undefined value each time and NaN contaminates the total—this also breaks empty arrays (should be 0), string arrays (concatenation instead of NaN), and sparse arrays (holes read as undefined).[0m
+● [1;36msum()[22;39m has an off-by-one bug: the loop runs to [1;36mi <= values.length[22;39m, so it reads [1;36mvalues[values.length][22;39m, which is [1;36mundefined[22;39m, and adds it to the total. Every call therefore returns [1;36mNaN[22;39m for numeric input, including [1;36msum([])[22;39m, which should be [1;36m0[22;39m but gives [1;36mNaN[22;39m.
+[90m│[0m
+[90m│[0m The other edge cases follow from that. A [1;36mNaN[22;39m element or a sparse-array hole (read as [1;36mundefined[22;39m) also poisons the result, though the bug already does. String elements switch [1;36m+=[22;39m to concatenation, so [1;36msum(["1","2"])[22;39m gives [1;36m"012undefined"[22;39m instead of a number. Changing the condition to [1;36mi < values.length[22;39m fixes the empty and normal cases, but you would still need to decide how to handle [1;36mNaN[22;39m, strings and holes, for example by coercing, skipping or throwing.
+[32m✻ success · 2 turns · 7s · $0.01[0m
