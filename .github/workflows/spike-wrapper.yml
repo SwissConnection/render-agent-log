@@ -4,24 +4,28 @@
 name: Spike wrapper
 
 on:
+  # Spike only: dispatch needs the file on main. Removed before the PR leaves draft.
+  push:
+    branches: [2-wrapper-spike]
   workflow_dispatch:
-    inputs:
-      render_dies:
-        description: The renderer exits inside its first stopped block
-        type: boolean
-        default: false
-      max_turns:
-        description: Turn budget; 1 ends the run in error_max_turns, so the action reports a failure
-        type: number
-        default: 4
 
 permissions:
   contents: read
 
 jobs:
   wrapper:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # One turn ends the run in error_max_turns, so the action reports a failure (::error::).
+        include:
+          - { name: healthy, render_dies: false, max_turns: 4 }
+          - { name: renderer dies, render_dies: true, max_turns: 4 }
+          - { name: run fails, render_dies: false, max_turns: 1 }
+          - { name: renderer dies and run fails, render_dies: true, max_turns: 1 }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -36,7 +40,7 @@ jobs:
         id: claude
         uses: anthropics/claude-code-action@9171db3e57d6a3140a37ddc2ba92788584e0ead6 # v1.0.234
         env:
-          SPIKE_RENDER_DIE: ${{ inputs.render_dies }}
+          SPIKE_RENDER_DIE: ${{ matrix.render_dies }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
@@ -49,7 +53,7 @@ jobs:
           claude_args: |
             --model haiku
             --allowedTools "Bash,Read"
-            --max-turns ${{ inputs.max_turns }}
+            --max-turns ${{ matrix.max_turns }}
 
       - name: After the action
         if: always()
