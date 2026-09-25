@@ -32,9 +32,15 @@ own=$(readlink /proc/$$/fd/1)
   done
 } >"$log"
 
+# A renderer that dies inside a stopped block leaves every later workflow command in the step inert,
+# the action's own ::error:: included, so the supervisor holds the token and closes the block for it.
+# The token is not exported: claude, and so the agent's Bash tool, never sees it.
+token=$(openssl rand -hex 16)
+render() {
+  SPIKE_STOP_TOKEN=$token python3 "$spike/render.py" || printf '::%s::\n::endgroup::\n' "$token"
+}
 # tee -p ignores SIGPIPE and drops an output whose reader went away, so a dead renderer cannot stop the
 # stream the SDK reads. The raw copy lets a later step compare what the SDK got with what was rendered.
-exec > >(tee -p "${RUNNER_TEMP:-/tmp}/claude-wrapper-stream.jsonl" \
-  >(python3 "$spike/render.py" >"$log" 2>&1) 2>"$log")
+exec > >(tee -p "${RUNNER_TEMP:-/tmp}/claude-wrapper-stream.jsonl" >(render >"$log" 2>&1) 2>"$log")
 # exec keeps this PID for the real claude, so the SDK's SIGTERM and exit code reach it, not a shell.
 exec "$real" "$@"

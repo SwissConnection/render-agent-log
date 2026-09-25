@@ -8,11 +8,11 @@ result line. The real renderer is #5.
 
 import json
 import os
-import secrets
 import sys
 
 E = "\x1b["
-token = secrets.token_hex(16)
+# The wrapper's, so it can close the block if this process dies.
+token = os.environ["SPIKE_STOP_TOKEN"]
 # Dies with a group and a stopped block open, to see what that does to the rest of the step.
 die_inside_block = os.environ.get("SPIKE_RENDER_DIE") == "true"
 calls = {}
