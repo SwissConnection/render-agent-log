@@ -121,8 +121,8 @@ matches the source.
     `claude -p … --output-format stream-json --verbose | render-agent-log`.
   - Live inside `claude-code-action`, it ships the wrapper from the spike (#2). The same step
     without inputs sets the `wrapper` output, a path inside the Action's own directory, passed as
-    `path_to_claude_code_executable`. Never a path in the checked-out tree: the wrapper runs with the
-    OAuth token in its environment, and a checked-out pull request would choose what runs. The wrapper
+    `path_to_claude_code_executable`. Never a path in the checked-out tree: the wrapper runs in the step
+    that holds the Claude token, and a checked-out pull request would decide what runs there. The wrapper
     runs the `claude` that the action installs with the Agent SDK and passes the SDK its stream
     untouched. `tee` copies the stream into a file, and the renderer follows the file into the step's
     log (`/proc/$PPID/fd/1`, so Linux only). A file never fills, so a renderer that hangs or falls

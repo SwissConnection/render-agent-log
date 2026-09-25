@@ -59,10 +59,10 @@ arrives.
     prompt: …
 ```
 
-**Pass only the `wrapper` output, never a path in the checked-out tree.** The wrapper runs with the
-OAuth token in its environment. The output points into this Action's own directory, which the `uses:`
-ref pins. A path in the workspace would let whatever is checked out choose what runs with the token,
-such as the head of a pull request under review.
+**Pass only the `wrapper` output, never a path in the checked-out tree.** The wrapper runs in the
+step that holds the Claude token, so its code can read the token. The output points at this Action's
+own copy, fixed by the `uses:` ref. A path in the checked-out tree runs whatever is checked out: in a
+workflow that checks out a pull request, code the pull request's author wrote.
 
 The wrapper relies on `claude-code-action`'s internals: the `claude` that its Agent SDK bundles, and
 the SDK running in the process whose stdout is the step's log

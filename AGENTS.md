@@ -62,8 +62,7 @@ may reach `dist/`. When an SDK bump fails the typecheck, a message type changed 
 
 1. **The input contract is the SDK's types.** Messages are typed by `@anthropic-ai/claude-agent-sdk`
    (`StdoutMessage` in `src/render.ts`: `SDKMessage` plus the control protocol), not by what one
-   sample run happened to contain. The renderer switches exhaustively
-   over them. A new message type gets a rendering or an explicit drop, decided in its own PR. At
+   sample run happened to contain. The renderer switches exhaustively over them. A new message type gets a rendering or an explicit drop, decided in its own PR. At
    runtime an unknown type prints one gray line; it never crashes and is never dropped silently.
 2. **Untrusted text never starts a line.** The runner executes a line that starts with `::` after
    whitespace or holds `##[` anywhere, and it ends lines at `\r` too. Tool output, call arguments and
