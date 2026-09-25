@@ -32,8 +32,20 @@ render-agent-log-wt/
 
 ## Commands
 
-None yet. The v0.1 scaffold issue adds TypeScript, Biome, Vitest and esbuild, and puts its command
-table here.
+Node 24 (the Action's runtime), npm. `npm ci` after `git worktree add`.
+
+| Command | Does |
+|---|---|
+| `npm run typecheck` | `tsc` over `src/` and `test/`, no emit |
+| `npm run lint` | Biome: lint, format and import order, read-only |
+| `npm run fix` | Biome: apply the safe fixes and format |
+| `npm test` | Vitest, once |
+| `npm run build` | esbuild bundles `src/index.ts` to `dist/index.js` |
+
+CI (`.github/workflows/ci.yml`) runs all but `fix`, and fails when `dist/` differs from a fresh build,
+so commit `dist/` with every source change. The SDK is imported with `import type` only; nothing of it
+may reach `dist/`. Renovate never automerges an SDK bump: a failing typecheck on that PR means a
+message type changed (rule 1).
 
 ## Rules
 
