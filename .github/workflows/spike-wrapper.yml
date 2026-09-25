@@ -4,9 +4,6 @@
 name: Spike wrapper
 
 on:
-  # Spike only: dispatch needs the file on main. Removed before the PR leaves draft.
-  push:
-    branches: [2-wrapper-spike]
   workflow_dispatch:
 
 permissions:
@@ -67,6 +64,10 @@ jobs:
           echo "action outputs: conclusion=${CONCLUSION:-unset} execution_file=${EXECUTION_FILE:-unset}"
           # Every message the SDK recorded, byte for byte after normalizing, is in the wrapper's copy.
           stream="$RUNNER_TEMP/claude-wrapper-stream.jsonl"
+          if [ ! -s "$stream" ] || [ ! -s "$EXECUTION_FILE" ]; then
+            echo "::error::the wrapper's copy or the execution file is missing or empty"
+            exit 1
+          fi
           echo "wrapper copy: $(wc -l <"$stream") lines; execution file: $(jq length "$EXECUTION_FILE") messages"
           missing=$(comm -23 <(jq -cS '.[]' "$EXECUTION_FILE" | sort) <(jq -cS . "$stream" | sort))
           if [ -n "$missing" ]; then
