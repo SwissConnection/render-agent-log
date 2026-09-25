@@ -1,10 +1,13 @@
-# Renders every fixture with the built renderer, so the log can be checked by eye in light and dark
-# theme. No token, no agent. A healthy run has zero annotations: the hostile fixture's commands must
-# stay inert. #6 swaps in the built Action.
+# Renders every fixture through the Action, live (render-agent-log on PATH) and after the run
+# (execution-file), so the log can be checked by eye in light and dark theme. No token, no agent, so it
+# also runs for pull requests from forks. A healthy run has zero annotations: the hostile fixture's
+# commands must stay inert.
 name: Visual check
 
 on:
   push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -18,26 +21,27 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 24 # the Action's runtime (runs.using: node24)
+      - name: Set up the live modes
+        uses: ./
       - name: edit-and-bash
-        run: node dist/index.js < fixtures/claude/edit-and-bash.jsonl
+        run: render-agent-log < fixtures/claude/edit-and-bash.jsonl
       - name: subagent
-        run: node dist/index.js < fixtures/claude/subagent.jsonl
+        run: render-agent-log < fixtures/claude/subagent.jsonl
       - name: subagents-background
-        run: node dist/index.js < fixtures/claude/subagents-background.jsonl
+        run: render-agent-log < fixtures/claude/subagents-background.jsonl
       - name: thinking
-        run: node dist/index.js < fixtures/claude/thinking.jsonl
+        run: render-agent-log < fixtures/claude/thinking.jsonl
       - name: max-turns
-        run: node dist/index.js < fixtures/claude/max-turns.jsonl
+        run: render-agent-log < fixtures/claude/max-turns.jsonl
+      - name: Wrap max-turns into an execution file
+        run: jq -s . fixtures/claude/max-turns.jsonl > "$RUNNER_TEMP/execution-file.json"
       - name: max-turns, from an execution file
-        run: |
-          jq -s . fixtures/claude/max-turns.jsonl > "$RUNNER_TEMP/execution-file.json"
-          node dist/index.js "$RUNNER_TEMP/execution-file.json"
+        uses: ./
+        with:
+          execution-file: ${{ runner.temp }}/execution-file.json
       - name: hostile-output
         run: |
-          node dist/index.js < fixtures/claude/hostile-output.jsonl
+          render-agent-log < fixtures/claude/hostile-output.jsonl
           echo "::add-mask::control-after"
           echo "control: control-after (prints *** when commands are live again after the renderer)"
           echo "injected: hostile-mask-value, legacy-mask-value, web-mask-value (print in clear when the injected add-mask commands stayed inert)"

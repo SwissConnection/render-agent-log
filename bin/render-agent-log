@@ -1,0 +1,5 @@
+#!/bin/sh
+# render-agent-log on PATH, for `claude -p … --output-format stream-json --verbose | render-agent-log`.
+# The Action without inputs puts this directory on PATH and names the node that runs the Action, since
+# a runner need not have one of its own.
+exec "${RENDER_AGENT_LOG_NODE:-node}" "$(dirname "$0")/../dist/index.js" "$@"

@@ -1,6 +1,7 @@
-# Spike (#2): live, rendered output from inside claude-code-action. The action runs spike/wrapper's
-# stand-in for claude, which tees the SDK's stream through a throwaway renderer into this step's log.
-# Dispatch it after bumping the action: the wrapper leans on the action's internals (see #2).
+# Re-check of the wrapper (#2, #6): live, rendered output from inside claude-code-action, through the
+# wrapper this Action ships. Dispatch it after bumping the action: the wrapper leans on the action's
+# internals (see #2). Each job also renders the run after the fact, and its raw stream through the
+# CLI, so all three modes run against a real run.
 # Runs Claude, so workflow_dispatch only (AGENTS.md rule 5).
 name: Spike wrapper
 
@@ -20,28 +21,63 @@ jobs:
       matrix:
         # One turn ends the run in error_max_turns, so the action reports a failure (::error::).
         include:
-          - { name: healthy, render_dies: false, max_turns: 4 }
-          - { name: renderer dies, render_dies: true, max_turns: 4 }
-          - { name: run fails, render_dies: false, max_turns: 1 }
-          - { name: renderer dies and run fails, render_dies: true, max_turns: 1 }
+          - { name: healthy, renderer: healthy, max_turns: 4 }
+          - { name: renderer dies, renderer: dies, max_turns: 4 }
+          - { name: renderer hangs, renderer: hangs, max_turns: 4 }
+          - { name: run fails, renderer: healthy, max_turns: 1 }
+          - { name: renderer dies and run fails, renderer: dies, max_turns: 1 }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
+      - name: Set up the live modes
+        id: render
+        uses: ./
+        with:
+          stream-copy: ${{ runner.temp }}/claude-stream.jsonl
+
+      # The node that runs the renderer is the seam: in the claude step, the renderer dies right after
+      # it opens its first group, or never reads at all. A later write to GITHUB_ENV wins.
+      - name: Stand in for the renderer's node
+        run: |
+          fake="$RUNNER_TEMP/fake-node"
+          cat >"$fake" <<EOF
+          #!/bin/sh
+          case "\$SPIKE_RENDERER" in
+            dies) "$RENDER_AGENT_LOG_NODE" "\$@" | awk '{ print } /^::group::/ { exit 1 }' ;;
+            hangs) exec sleep 3600 ;;
+            *) exec "$RENDER_AGENT_LOG_NODE" "\$@" ;;
+          esac
+          EOF
+          chmod +x "$fake"
+          echo "RENDER_AGENT_LOG_NODE=$fake" >>"$GITHUB_ENV"
+
+      - name: Write tool output with workflow commands in it
+        run: |
+          cat >"$RUNNER_TEMP/hostile-output.txt" <<'EOF'
+          ::error::injected by tool output: must not become an annotation
+            ::warning::injected behind leading spaces: must not become an annotation
+          ::add-mask::spike-wrapper-secret
+          ::endgroup::
+          still inside the group: the injected endgroup above did nothing
+          ::group::injected group
+          end of the tool output
+          EOF
+
       - name: Claude through the wrapper
         id: claude
         uses: anthropics/claude-code-action@9171db3e57d6a3140a37ddc2ba92788584e0ead6 # v1.0.234
         env:
-          SPIKE_RENDER_DIE: ${{ matrix.render_dies }}
+          SPIKE_RENDERER: ${{ matrix.renderer }}
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ github.token }}
-          path_to_claude_code_executable: ${{ github.workspace }}/spike/wrapper/bin/claude-wrapper
+          path_to_claude_code_executable: ${{ steps.render.outputs.wrapper }}
           # Bash, not Read: Read numbers its lines, so injected commands would not start a line.
           prompt: |
             In a single message, make these two tool calls in parallel:
-            Bash `cat spike/wrapper/hostile-output.txt` and Read `README.md`.
+            Bash `cat ${{ runner.temp }}/hostile-output.txt` and Read `README.md`.
             Then reply with one short sentence. Do nothing else.
           claude_args: |
             --model haiku
@@ -53,13 +89,23 @@ jobs:
         env:
           CONCLUSION: ${{ steps.claude.outputs.conclusion }}
           EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+          RENDERER: ${{ matrix.renderer }}
         run: |
           echo "::add-mask::control-after-action"
           echo "control: control-after-action (prints *** when commands are live in this step)"
           echo "injected: spike-wrapper-secret (prints in clear when the injected add-mask stayed inert)"
           echo "action outputs: conclusion=${CONCLUSION:-unset} execution_file=${EXECUTION_FILE:-unset}"
+          if [ "$RENDERER" = hangs ]; then
+            echo "a hung renderer never gets to write the raw copy"
+            exit 0
+          fi
+          # The wrapper removes its buffer once the copy is written.
+          for _ in $(seq 50); do
+            ls "$RUNNER_TEMP"/render-agent-log.* >/dev/null 2>&1 || break
+            sleep 0.2
+          done
           # Every message the SDK recorded, byte for byte after normalizing, is in the wrapper's copy.
-          stream="$RUNNER_TEMP/claude-wrapper-stream.jsonl"
+          stream="$RUNNER_TEMP/claude-stream.jsonl"
           if [ ! -s "$stream" ] || [ ! -s "$EXECUTION_FILE" ]; then
             echo "::error::the wrapper's copy or the execution file is missing or empty"
             exit 1
@@ -72,3 +118,13 @@ jobs:
             exit 1
           fi
           echo "every SDK message is in the wrapper's copy"
+
+      - name: The same run, after the fact
+        if: always() && steps.claude.outputs.execution_file != ''
+        uses: ./
+        with:
+          execution-file: ${{ steps.claude.outputs.execution_file }}
+
+      - name: The same run, through the CLI
+        if: always() && matrix.renderer != 'hangs'
+        run: render-agent-log < "$RUNNER_TEMP/claude-stream.jsonl"

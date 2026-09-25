@@ -43,10 +43,16 @@ Node 24 (the Action's runtime), npm. `npm ci` after `git worktree add`.
 | `npm run lint` | Biome: lint, format and import order, read-only |
 | `npm run fix` | Biome: apply the safe fixes and format |
 | `npm test` | Vitest, once |
-| `npm run build` | esbuild bundles `src/index.ts` to `dist/index.js` |
+| `npm run build` | esbuild bundles the CLI (`src/index.ts`) and the Action (`src/action.ts`) to `dist/` |
 
 `node src/index.ts fixtures/claude/<name>.jsonl` renders a fixture in the terminal. The golden files
 in `test/golden/` hold each fixture's rendering; `npx vitest run -u` rewrites them, so read the diff.
+
+The wrapper (`wrapper/claude-wrapper`) reaches the log through `/proc`, so its tests run on Linux only.
+On macOS, run them in a container: copy the tree without `node_modules` into `node:24-bookworm`, then
+`npm ci && npx vitest run test/wrapper.test.ts`.
+
+A release is a pushed `vX.Y.Z` tag: `release.yml` publishes it and moves the `vX` tag to it.
 
 CI (`.github/workflows/ci.yml`) runs all but `fix`, and fails when `dist/` differs from a fresh build,
 so commit `dist/` with every source change. The SDK is imported with `import type` only; nothing of it

@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# The wrapper for claude-code-action, passed as path_to_claude_code_executable (the Action's wrapper
+# output). It runs the real claude on the SDK's own stdin, stdout and stderr, and copies claude's
+# stdout through the renderer into the step's log. Linux only: it reaches the log through /proc.
+#
+# Gotchas:
+# - The action prepends this directory to PATH, for the agent's Bash tool and for every later step.
+#   That is why the file is not called claude and sits alone here.
+# - The action also runs this path for other subcommands (plugin install). Only the SDK's query passes
+#   --output-format stream-json, so everything else goes straight to the real claude.
+# - It runs with the OAuth token in its environment, so it must come from this Action's directory,
+#   pinned by the uses: ref, and never from a checked-out tree a pull request could change.
+set -euo pipefail
+
+# The native claude the SDK bundles, which the action installs with it: the version always matches the
+# SDK's, so there is no separate install to pin and keep in step with the action.
+arch=$(uname -m | sed 's/x86_64/x64/; s/aarch64/arm64/')
+real=${RENDER_AGENT_LOG_CLAUDE:-${GITHUB_ACTION_PATH:-}/node_modules/@anthropic-ai/claude-agent-sdk-linux-$arch/claude}
+case " $* " in
+  *" --output-format stream-json "*) ;;
+  *) exec "$real" "$@" ;;
+esac
+
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+own=$(readlink /proc/$$/fd/1 2>/dev/null || true)
+
+# The SDK spawns this script from the action's bun process, whose stdout is a pipe to the runner: the
+# step's log. Should a process ever sit between the SDK and this script, the parent's stdout is no
+# longer the log, and at worst it is the SDK's own stream, which rendered lines would corrupt. Then
+# the run goes unrendered, with a warning where the log most likely is: the grandparent's stdout.
+log=/proc/$PPID/fd/1
+parent=$(readlink "$log" 2>/dev/null || true)
+if [[ $parent != pipe:* || $parent == "$own" ]]; then
+  grandparent=$(awk '/^PPid:/ { print $2 }' "/proc/$PPID/status" 2>/dev/null || true)
+  above=$(readlink "/proc/${grandparent:-0}/fd/1" 2>/dev/null || true)
+  if [[ $above == pipe:* && $above != "$own" ]]; then
+    printf '::warning::render-agent-log: the wrapper'\''s parent (pid %s) writes to %s, not to the step'\''s log, so this run is not rendered live. Render the execution_file after the run instead.\n' \
+      "$PPID" "${parent:-nothing}" >"/proc/$grandparent/fd/1"
+  fi
+  exec "$real" "$@"
+fi
+
+if [[ ! -x $real ]]; then
+  printf '::error::render-agent-log: no claude at %s. Has claude-code-action moved the SDK'\''s claude?\n' \
+    "$real" >"$log"
+  exit 127
+fi
+
+# claude's stdout goes through tee to the SDK and to a file the renderer follows. A pipe to the
+# renderer would fill when the renderer hangs or falls behind, and stall tee, claude and the SDK with
+# it; a file never fills. tee -p ignores SIGPIPE, so it keeps the file whole should the SDK stop
+# reading first.
+buffer=$(mktemp "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/render-agent-log.XXXXXX")
+exec > >(tee -p -- "$buffer")
+tee=$!
+
+# tail stops once tee is gone, and only then: tee is claude's child after the exec below, so it stays a
+# zombie until claude exits, and it writes the stream's last lines after claude's.
+# A renderer that exits non-zero, SIGKILL included, may leave a group open, which would fold the rest
+# of the step's log into it, the action's own ::error:: included. The wrapper closes it at once.
+{
+  set +e
+  "${RENDER_AGENT_LOG_NODE:-node}" "$root/dist/index.js" < <(tail -f -n +1 --pid="$tee" -- "$buffer") ||
+    printf '::endgroup::\n'
+  if [[ -n ${RENDER_AGENT_LOG_STREAM_COPY:-} ]]; then
+    tail -f --pid="$tee" /dev/null # until the stream has ended, should the renderer have died first
+    cat -- "$buffer" >>"$RENDER_AGENT_LOG_STREAM_COPY"
+  fi
+  rm -f -- "$buffer"
+} </dev/null >"$log" 2>&1 &
+
+# exec keeps this PID for the real claude, so the SDK's SIGTERM and exit code reach it, not a shell.
+exec "$real" "$@"

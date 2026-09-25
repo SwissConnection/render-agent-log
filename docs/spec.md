@@ -115,11 +115,18 @@ matches the source.
     for `claude-code-action` users, meaning #141's audience and our `claude.yml` / `claude-pr-summary.yml`.
   - Without inputs, it puts the CLI on `PATH` for live piping:
     `claude -p … --output-format stream-json --verbose | render-agent-log`.
-  - Live inside `claude-code-action`, it ships the wrapper from the spike (#2), passed as
-    `path_to_claude_code_executable`. The wrapper runs the `claude` that the action installs with the
-    Agent SDK, passes the SDK its stream untouched, and tees a copy through the renderer into the
-    step's log (`/proc/$PPID/fd/1`, so Linux only). If the renderer exits non-zero, the wrapper closes
-    the group for it.
+  - Live inside `claude-code-action`, it ships the wrapper from the spike (#2). The same step
+    without inputs sets the `wrapper` output, a path inside the Action's own directory, passed as
+    `path_to_claude_code_executable`. Never a path in the checked-out tree: the wrapper runs with the
+    OAuth token in its environment, and a checked-out pull request would choose what runs. The wrapper
+    runs the `claude` that the action installs with the Agent SDK and passes the SDK its stream
+    untouched. `tee` copies the stream into a file, and the renderer follows the file into the step's
+    log (`/proc/$PPID/fd/1`, so Linux only). A file never fills, so a renderer that hangs or falls
+    behind cannot stall the agent. If the renderer exits non-zero, the wrapper closes the group for
+    it. If the parent's stdout is not a pipe, or is the wrapper's own stdout, a process sits between
+    the SDK and the wrapper, and the log is not where the wrapper expects it. The wrapper then renders
+    nothing and prints one `::warning::`. On other runner OSs the output is empty, with a
+    `::warning::`. The `stream-copy` input keeps the raw stream, off by default.
 - **npm** `@swissconnection/render-agent-log`: later, when someone wants it in a local terminal.
 
 The Action comes first because it is the product. The CLI is its live mode, not a separate
