@@ -119,7 +119,7 @@ deliverable.
    stays the live path. **Result (#2): it holds**, and `spike-wrapper.yml` re-checks it on dispatch
    when the action is bumped. The render spike's `visual-check.yml` stays afterwards as a visual
    check: it renders the fixtures into a real log on every PR.
-1. **Core and Action, v0.1.** Build the renderer, the fixtures, both Action modes and a CI release.
+1. **Core and Action, v0.1.** Build the renderer, the fixtures, the three Action modes and a CI release.
 2. **Dogfood in swissconn-workspace.** Its three Claude workflows log through render-agent-log.
    Live is preferred wherever its costs don't outweigh it. The dependency review uses nothing
    `claude-code-action` adds, so it leaves the action for a direct `claude -p | render-agent-log`
