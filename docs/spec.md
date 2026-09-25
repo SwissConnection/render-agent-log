@@ -13,7 +13,7 @@ anthropics/claude-code-action#141 has been open since June 2025.
 ## Goal
 
 Make the job log of a Claude Code run read like the Claude Code terminal: a `●` line per tool call, a
-short `⎿` preview of its output, the full output folded into a collapsed group, the agent's text as
+short `└` preview of its output, the full output folded into a collapsed group, the agent's text as
 prose, and a one-line summary at the end.
 
 **Scope: Claude Code, in GitHub Actions logs.** Other agents, HTML, local terminals and step summaries
@@ -43,7 +43,7 @@ dropped silently and never crashes the renderer.
 | assistant `text` | `●` prose with a small Markdown subset turned into ANSI: bold, inline code, headings, lists |
 | assistant `thinking` | gray italic, when present |
 | assistant `tool_use` | green `●` **Tool**(main argument, one line, ≤140 characters) |
-| user `tool_result` | up to 3 preview lines under `⎿` (gray, red if `is_error`), then the full output in `::group::… N lines` |
+| user `tool_result` | up to 3 preview lines under `└` (gray, red if `is_error`; not Claude Code's `⎿`, which falls back to a wider font in the log), then the full output in `::group::… N lines` |
 | Edit/Write result | colored diff from `tool_use_result.structuredPatch` |
 | Bash result | `stdout` and `stderr` from `tool_use_result`, with stderr marked |
 | subagent messages (`parent_tool_use_id` set) | indented under the Agent call |
