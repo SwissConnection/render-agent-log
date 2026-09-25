@@ -10,7 +10,10 @@
 #   query passes --output-format stream-json, so everything else goes straight to the real claude.
 set -euo pipefail
 
-real=${SPIKE_REAL_CLAUDE:-$HOME/.local/bin/claude}
+# The native claude the SDK bundles, which the action installs with it: the version always matches the
+# SDK's, so there is no separate install to pin and keep in step with the action.
+arch=$(uname -m | sed 's/x86_64/x64/; s/aarch64/arm64/')
+real=${SPIKE_REAL_CLAUDE:-$GITHUB_ACTION_PATH/node_modules/@anthropic-ai/claude-agent-sdk-linux-$arch/claude}
 case " $* " in
   *" --output-format stream-json "*) ;;
   *) exec "$real" "$@" ;;
@@ -24,6 +27,7 @@ own=$(readlink /proc/$$/fd/1)
   printf '\e[90mwrapper: pid %s, parent %s (%s), parent stdout %s, own stdout %s, render_dies=%s\e[0m\n' \
     "$$" "$PPID" "$(ps -o comm= -p "$PPID")" "$(readlink "$log")" "$own" \
     "${SPIKE_RENDER_DIE:-unset}"
+  printf '\e[90mwrapper: claude %s at %s\e[0m\n' "$("$real" --version)" "$real"
   # Ancestors by name only: argv carries the SDK's --mcp-config, token included.
   pid=$$
   while [ "$pid" -gt 1 ]; do
