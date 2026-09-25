@@ -135,8 +135,10 @@ deliverable.
   `::error::` / `::add-mask::` / `::endgroup::` / `##[…]` staying inert (checked by applying the
   runner's rules to the output), and a renderer stopped mid-group still closing it. No tests that
   restate the code.
-- **Fixtures:** real runs, sanitized. Capture one `stream-json` stream locally and download the
-  execution files of the dependency review, the mention agent and the PR summary.
+- **Fixtures:** real `stream-json` runs captured locally and sanitized, plus a hand-made stream of
+  hostile output (`fixtures/claude/README.md`). The execution-file format is tested by wrapping a
+  fixture into an array; one real execution file from swissconn-workspace is added during
+  dogfooding (#7).
 - **Agent guide:** an `AGENTS.md` in the repo, written the same way as the workspace's (pointers and
   non-obvious rules). The key rule: a new SDK message type gets a rendering or an explicit drop,
   decided in its own PR.
