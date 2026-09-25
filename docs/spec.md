@@ -59,7 +59,9 @@ Rules:
 2. **Tool output cannot issue workflow commands.** The runner runs any line whose first
    non-whitespace characters are `::` (`ActionCommand.TryParseV2` trims leading whitespace first).
    Tool output is untrusted (changelogs, web pages), so every block of it is wrapped in
-   `::stop-commands::<random token>` … `::<token>::`, inside its group.
+   `::stop-commands::<random token>` … `::<token>::`, inside its group. This guards against output
+   that contains commands, not against the agent: an agent with Bash can write workflow commands into
+   the step's log itself through `/proc`, with or without this tool (#2).
 3. Only SGR escape sequences (colors) from tool output reach the log. Other escape sequences are
    stripped.
 4. Output is flushed per message, so the live log keeps pace with the agent.
