@@ -8,6 +8,7 @@ hand-made stream of hostile tool output. The renderer's golden files and targete
 | `edit-and-bash.jsonl` | Two parallel Reads; `npm test` failing (`is_error`, red); an Edit with `structuredPatch`; two parallel Bash calls whose results arrive in reverse order (`fast done` before `slow done`); `node --help`, 465 lines of stdout; `task_started` / `task_notification` for a Bash call |
 | `subagent.jsonl` | One foreground Agent call: the subagent's prompt, its Grep and Glob calls and their results carry `parent_tool_use_id`, then the Agent's own result under the top-level call |
 | `subagents-background.jsonl` | Two parallel Agent calls that the CLI ran in the background: each call's result is only "Async agent launched", the two subagents' messages interleave, and the run emits three `system/init` + `result` pairs as the session resumes after each `task_notification`. Also two `thinking` blocks with empty text and only a signature, and `background_tasks_changed` / `task_updated` |
+| `thinking.jsonl` | Captured with `--thinking-display summarized`: a `thinking` block with text, a Read, the answer, and a run of `system/thinking_tokens` |
 | `max-turns.jsonl` | `--max-turns 2`: the final `result` is `error_max_turns` with `is_error: true` and `errors` |
 | `hostile-output.jsonl` | Hand-made (see below) |
 
@@ -19,6 +20,10 @@ Shapes worth knowing before writing the renderer:
 - `tool_use_result` is an object on success but a plain string (`"Error: Exit code 1\n…"`) on a failed
   Bash call.
 - A tool result's `content` is a string for most tools and an array of text blocks for Agent.
+- `thinking` text is empty (only a `signature`) unless the run asks for `--thinking-display summarized`,
+  the SDK's `thinking.display` option. Every other capture here ran without it.
+- In `subagents-background.jsonl`, `num_turns` and `duration_ms` restart with each `result`, while
+  `total_cost_usd` does not (0.0988, 0.0988, 0.1068).
 
 ## `hostile-output.jsonl`
 
