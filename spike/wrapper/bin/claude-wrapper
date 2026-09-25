@@ -38,7 +38,9 @@ own=$(readlink /proc/$$/fd/1)
 
 # A renderer that dies inside a stopped block leaves every later workflow command in the step inert,
 # the action's own ::error:: included, so the supervisor holds the token and closes the block for it.
-# The token is not exported: claude, and so the agent's Bash tool, never sees it.
+# The token is not exported, so it is not in claude's environment and tool output cannot echo it by
+# accident. It is no secret from the agent: the renderer's /proc/<pid>/environ is readable by the same
+# user, and the agent can write workflow commands to the log directly anyway (spec, output rule 2).
 token=$(openssl rand -hex 16)
 render() {
   SPIKE_STOP_TOKEN=$token python3 "$spike/render.py" || printf '::%s::\n::endgroup::\n' "$token"
