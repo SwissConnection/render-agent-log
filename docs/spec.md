@@ -13,7 +13,7 @@ anthropics/claude-code-action#141 has been open since June 2025.
 ## Goal
 
 Make the job log of a Claude Code run read like the Claude Code terminal: a `●` line per tool call, a
-short `⎿` preview of its output, the full output folded into a collapsed group, the agent's text as
+short `└` preview of its output, the full output folded into a collapsed group, the agent's text as
 prose, and a one-line summary at the end.
 
 **Scope: Claude Code, in GitHub Actions logs.** Other agents, HTML, local terminals and step summaries
@@ -41,9 +41,9 @@ dropped silently and never crashes the renderer.
 |---|---|
 | `system/init` | gray `✻ <model> · <cwd>` line |
 | assistant `text` | `●` prose with a small Markdown subset turned into ANSI: bold, inline code, headings, lists |
-| assistant `thinking` | dim italic, when present |
+| assistant `thinking` | gray italic, when present |
 | assistant `tool_use` | green `●` **Tool**(main argument, one line, ≤140 characters) |
-| user `tool_result` | up to 3 preview lines under `⎿` (gray, red if `is_error`), then the full output in `::group::… N lines` |
+| user `tool_result` | up to 3 preview lines under `└` (gray, red if `is_error`; not Claude Code's `⎿`, which falls back to a wider font in the log), then the full output in `::group::… N lines` |
 | Edit/Write result | colored diff from `tool_use_result.structuredPatch` |
 | Bash result | `stdout` and `stderr` from `tool_use_result`, with stderr marked |
 | subagent messages (`parent_tool_use_id` set) | indented under the Agent call |
@@ -65,6 +65,11 @@ Rules:
 4. Output is flushed per message, so the live log keeps pace with the agent.
 5. Secrets: this adds no exposure beyond `show_full_output`, and GitHub still masks them verbatim.
    The README says so plainly.
+6. **The renderer's own colors adapt to the theme.** The log gives each of the 16 named colors a
+   shade per theme, so the renderer uses only those, plus bold and italic, and no 256-color or
+   truecolor codes, whose shades are fixed. It never uses black (30), which is hard to read on the
+   dark theme, or dim (2), which the log renders as normal text.
+   Tool output keeps its own colors (rule 3).
 
 ## Packaging
 
