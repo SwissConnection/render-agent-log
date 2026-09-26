@@ -11,6 +11,8 @@ without being told. What to build and why is in [docs/spec.md](docs/spec.md).
   [render-agent-log board](https://github.com/orgs/SwissConnection/projects/6). Start from the issue, not from memory.
 - **Consumer:** [SwissConnection/swissconn-workspace](https://github.com/SwissConnection/swissconn-workspace)
   runs Claude in three workflows. It is the first user, not the only one.
+- **Demo:** `demo.yml` has Claude fix the failing test of the tiny shop in `demo/`, rendered live:
+  the README's screenshots come from its runs.
 
 ## Worktrees
 
