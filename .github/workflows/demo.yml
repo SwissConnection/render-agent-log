@@ -6,6 +6,9 @@ name: Demo
 
 on:
   workflow_dispatch:
+  # Temporary: registers the workflow from this branch. Removed before merge.
+  push:
+    branches: [7-demo]
 
 permissions:
   contents: read
