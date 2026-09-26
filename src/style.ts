@@ -1,11 +1,10 @@
 // The renderer's own styling: the 16 named colors, bold and italic, because the log gives each named
-// color a shade per theme (spec, output rule 7). Gray is the exception.
+// color a shade per theme. Gray is the exception, since no named color is gray in both (spec, output
+// rule 7).
 
 const span = (on: string, off: string) => (text: string) =>
   text === "" ? "" : `\x1b[${on}m${text}\x1b[${off}m`;
 
-// No named color is gray in both themes: bright black (90) is nearly the text color on the light
-// theme, and white (37) is the text color on the dark one. A fixed mid-gray reads on both.
 export const gray = span("38;5;244", "0");
 export const red = span("31", "0");
 export const green = span("32", "0");

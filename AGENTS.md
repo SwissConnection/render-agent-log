@@ -60,20 +60,19 @@ may reach `dist/`. When an SDK bump fails the typecheck, a message type changed 
 
 ## Rules
 
-1. **The input contract is the SDK's types.** Messages are typed by `@anthropic-ai/claude-agent-sdk`
-   (`StdoutMessage` in `src/render.ts`: `SDKMessage` plus the control protocol), not by what one
-   sample run happened to contain. The renderer switches exhaustively over them. A new message type gets a rendering or an explicit drop, decided in its own PR. At
-   runtime an unknown type prints one gray line; it never crashes and is never dropped silently.
-2. **Untrusted text never starts a line.** The runner executes a line that starts with `::` after
-   whitespace or holds `##[` anywhere, and it ends lines at `\r` too. Tool output, call arguments and
-   agent text go through `src/text.ts`, and every line but `::group::` / `::endgroup::` starts with a
-   character the renderer owns, folded output included. Nothing prints them raw.
-3. **A result always sits under its own call**, including parallel calls and subagents.
-4. **Live first.** Flush after every message; nothing may buffer a whole run.
+1. **The input contract is the SDK's types** (`StdoutMessage` in `src/render.ts`). A new message type
+   gets a rendering or an explicit drop, decided in its own PR
+   ([spec § Input contract](docs/spec.md#input-contract)).
+2. **Untrusted text never starts a line.** Tool output, call arguments and agent text reach the log
+   only through `src/text.ts` and behind a character the renderer owns
+   ([spec § Output](docs/spec.md#output), rule 2).
+3. **A result always sits under its own call**, including parallel calls and subagents
+   (spec § Output, rule 1).
+4. **Live first.** One write per message; nothing may buffer a whole run (spec § Output, rule 4).
 5. **Workflows that run Claude trigger only on `push` or `workflow_dispatch`.** This repository is
    public; never `pull_request` or `pull_request_target` for a job that holds a token.
-6. **Tests catch silent wrong answers** (a result under the wrong call, an inert command made live, an
-   error shown as success). No test restates the code under test.
+6. **Tests catch silent wrong answers**; no test restates the code under test
+   ([spec § Engineering](docs/spec.md#engineering)).
 7. **Comments** do three jobs only: what a unit is, a gotcha the code cannot show, why something that
    looks wrong is right.
 

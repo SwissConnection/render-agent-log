@@ -54,12 +54,6 @@ const foldedTone: Record<Tone, Color> = {
   hunk: gray,
 };
 
-// Turns SDK messages into log lines, one message at a time. It keeps the calls it has seen, so a
-// result can be put under its own call, and a subagent's messages under the Agent call.
-//
-// Every line but the renderer's own group commands starts with a character the renderer owns (●, ✻,
-// └, │, ›, ·), so no untrusted text can start a line and run as a workflow command (spec, output
-// rule 2). A message renders to whole groups, so the text of one `render` call never leaves one open.
 // A /goal's state: cleared, or not met yet after some iterations.
 function goalNote({ value }: SDKActiveGoalMessage): string {
   if (value === null) return "· goal cleared";
@@ -67,6 +61,8 @@ function goalNote({ value }: SDKActiveGoalMessage): string {
   return `· goal: ${value.condition} · ${value.iterations} iterations${reason}`;
 }
 
+// Turns SDK messages into log lines, one message at a time. It keeps the calls it has seen, so a
+// result can be put under its own call, and a subagent's messages under the Agent call.
 export class Renderer {
   readonly #calls = new Map<string, Call>();
   // The calls the last printed line sits under. A line for another call first repeats its header.
@@ -74,7 +70,7 @@ export class Renderer {
   #cwd = "";
   #out: string[] = [];
 
-  // The log text for one message: whole lines, or "" for a message that prints nothing.
+  // The log text for one message: whole lines and whole groups, or "" for one that prints nothing.
   // A message that makes the renderer throw prints one gray line in place of what it had rendered.
   render(message: StdoutMessage): string {
     this.#out = [];
