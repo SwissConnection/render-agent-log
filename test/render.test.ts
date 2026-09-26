@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { describe, expect, test } from "vitest";
 import { Renderer } from "../src/render.ts";
@@ -25,6 +26,15 @@ describe.each(fixtures)("%s", (name) => {
       .map((line) => JSON.parse(line));
     expect(await render(JSON.stringify(messages, null, 2))).toBe(await render(fixture(name)));
   });
+});
+
+// claude-code-action's execution_file as the action writes it, from a demo.yml run.
+test("a real execution file renders as its golden file", async () => {
+  const file = readFileSync(
+    new URL("../fixtures/claude/execution-file.json", import.meta.url),
+    "utf8",
+  );
+  await expect(await render(file)).toMatchFileSnapshot("golden/execution-file.txt");
 });
 
 // The escape code that opens the renderer's error color.
