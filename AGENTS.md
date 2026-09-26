@@ -43,10 +43,16 @@ Node 24 (the Action's runtime), npm. `npm ci` after `git worktree add`.
 | `npm run lint` | Biome: lint, format and import order, read-only |
 | `npm run fix` | Biome: apply the safe fixes and format |
 | `npm test` | Vitest, once |
-| `npm run build` | esbuild bundles `src/index.ts` to `dist/index.js` |
+| `npm run build` | esbuild bundles the CLI (`src/index.ts`) and the Action (`src/action.ts`) to `dist/` |
 
 `node src/index.ts fixtures/claude/<name>.jsonl` renders a fixture in the terminal. The golden files
 in `test/golden/` hold each fixture's rendering; `npx vitest run -u` rewrites them, so read the diff.
+
+The wrapper (`wrapper/claude-wrapper`) reaches the log through `/proc`, so its tests run on Linux only.
+On macOS, run them in a container: copy the tree without `node_modules` into `node:24-bookworm`, then
+`npm ci && npx vitest run test/wrapper.test.ts`.
+
+A release is a pushed `vX.Y.Z` tag: `release.yml` publishes it and moves the `vX` tag to it.
 
 CI (`.github/workflows/ci.yml`) runs all but `fix`, and fails when `dist/` differs from a fresh build,
 so commit `dist/` with every source change. The SDK is imported with `import type` only; nothing of it
@@ -55,8 +61,8 @@ may reach `dist/`. When an SDK bump fails the typecheck, a message type changed 
 ## Rules
 
 1. **The input contract is the SDK's types.** Messages are typed by `@anthropic-ai/claude-agent-sdk`
-   (`SDKMessage`), not by what one sample run happened to contain. The renderer switches exhaustively
-   over them. A new message type gets a rendering or an explicit drop, decided in its own PR. At
+   (`StdoutMessage` in `src/render.ts`: `SDKMessage` plus the control protocol), not by what one
+   sample run happened to contain. The renderer switches exhaustively over them. A new message type gets a rendering or an explicit drop, decided in its own PR. At
    runtime an unknown type prints one gray line; it never crashes and is never dropped silently.
 2. **Untrusted text never starts a line.** The runner executes a line that starts with `::` after
    whitespace or holds `##[` anywhere, and it ends lines at `\r` too. Tool output, call arguments and

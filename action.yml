@@ -1,0 +1,28 @@
+name: Render Agent Log
+description: Render Claude Code runs as readable, colored, collapsible logs, live or after the run
+author: SwissConnection
+branding:
+  icon: terminal
+  color: orange
+
+inputs:
+  execution-file:
+    description: >-
+      A finished run to render: claude-code-action's execution_file output, or a stream-json file.
+      Without it, the Action sets up the live modes for the job's later steps instead.
+    required: false
+  stream-copy:
+    description: >-
+      Live modes only: a file the wrapper appends the raw stream-json to, for debugging. Off by default,
+      since it duplicates every tool output to disk.
+    required: false
+
+outputs:
+  wrapper:
+    description: >-
+      Live modes only, Linux only: the wrapper to pass to claude-code-action as
+      path_to_claude_code_executable, which renders the run into that step's log as it happens.
+
+runs:
+  using: node24
+  main: dist/action.js

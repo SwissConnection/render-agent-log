@@ -1,9 +1,11 @@
 import type {
+  SDKActiveGoalMessage,
   SDKAssistantMessage,
   SDKMessage,
   SDKResultMessage,
   SDKUserMessage,
   SDKUserMessageReplay,
+  Transport,
 } from "@anthropic-ai/claude-agent-sdk";
 import { markdown } from "./markdown.ts";
 import { bold, gray, grayItalic, green, red, yellow } from "./style.ts";
@@ -19,6 +21,12 @@ interface Call {
   // The Agent calls this call runs under, outermost first: its subagent nesting.
   chain: string[];
 }
+
+// Everything claude writes to stdout in stream-json mode: the SDKMessage union, plus the control
+// protocol between the SDK and claude, which the wrapper sees too. The SDK exports this union only
+// as what a Transport reads.
+export type StdoutMessage =
+  ReturnType<Transport["readMessages"]> extends AsyncGenerator<infer Message> ? Message : never;
 
 type SystemMessage = Extract<SDKMessage, { type: "system" }>;
 type Color = (text: string) => string;
@@ -52,6 +60,13 @@ const foldedTone: Record<Tone, Color> = {
 // Every line but the renderer's own group commands starts with a character the renderer owns (●, ✻,
 // └, │, ›, ·), so no untrusted text can start a line and run as a workflow command (spec, output
 // rule 2). A message renders to whole groups, so the text of one `render` call never leaves one open.
+// A /goal's state: cleared, or not met yet after some iterations.
+function goalNote({ value }: SDKActiveGoalMessage): string {
+  if (value === null) return "· goal cleared";
+  const reason = value.last_reason === undefined ? "" : ` · ${value.last_reason}`;
+  return `· goal: ${value.condition} · ${value.iterations} iterations${reason}`;
+}
+
 export class Renderer {
   readonly #calls = new Map<string, Call>();
   // The calls the last printed line sits under. A line for another call first repeats its header.
@@ -61,7 +76,7 @@ export class Renderer {
 
   // The log text for one message: whole lines, or "" for a message that prints nothing.
   // A message that makes the renderer throw prints one gray line in place of what it had rendered.
-  render(message: SDKMessage): string {
+  render(message: StdoutMessage): string {
     this.#out = [];
     try {
       this.#message(message);
@@ -74,7 +89,7 @@ export class Renderer {
     return this.#out.map((line) => `${defuse(line)}\n`).join("");
   }
 
-  #message(message: SDKMessage): void {
+  #message(message: StdoutMessage): void {
     switch (message.type) {
       case "assistant":
         this.#assistant(message);
@@ -93,6 +108,15 @@ export class Renderer {
       case "auth_status":
       case "conversation_reset":
         this.#note(gray, `· ${message.type}`);
+        break;
+      case "active_goal":
+        this.#note(gray, goalNote(message));
+        break;
+      // The control protocol: requests, answers and heartbeats between the SDK and claude.
+      case "control_request":
+      case "control_response":
+      case "control_cancel_request":
+      case "keep_alive":
         break;
       // Progress and UI state, not transcript.
       case "stream_event":

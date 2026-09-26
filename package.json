@@ -10,7 +10,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --target=node24 --format=esm --outfile=dist/index.js",
+    "build": "esbuild src/index.ts src/action.ts --bundle --platform=node --target=node24 --format=esm --outdir=dist",
     "typecheck": "tsc",
     "lint": "biome check",
     "fix": "biome check --write",

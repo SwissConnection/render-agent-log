@@ -1,0 +1,44 @@
+# Publishes a pushed vX.Y.Z tag as a GitHub release and moves the vX tag to it, so `uses: …@vX`
+# follows the latest release. No agent runs here.
+name: Release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
+          cache: npm
+      - run: npm ci
+      - name: dist/ matches the source
+        run: |
+          npm run build
+          if [ -n "$(git status --porcelain -- dist)" ]; then
+            echo "::error::dist/ is stale at $GITHUB_REF_NAME. Tag a commit whose dist/ is built."
+            exit 1
+          fi
+      - name: Release and move the major tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" --verify-tag --generate-notes --title "$TAG"
+          major=${TAG%%.*}
+          if gh api "repos/$GH_REPO/git/ref/tags/$major" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/$GH_REPO/git/refs/tags/$major" -f sha="$GITHUB_SHA" -F force=true
+          else
+            gh api "repos/$GH_REPO/git/refs" -f ref="refs/tags/$major" -f sha="$GITHUB_SHA"
+          fi
