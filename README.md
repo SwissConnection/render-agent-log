@@ -62,10 +62,8 @@ arrives.
 **Pass only the `wrapper` output, never a path in the checked-out tree.** The wrapper runs in the
 step that holds the Claude token, so its code can read the token. The output points at this Action's
 own copy, fixed by the `uses:` ref. A path in the checked-out tree runs whatever is checked out: in a
-workflow that checks out a pull request, code the pull request's author wrote. The ref fixes the copy
-only while no earlier step in the job runs untrusted code: every step can write to the Action's
-directory, and such a step could rewrite the wrapper as easily as `claude-code-action` itself. The
-wrapper adds no exposure there.
+workflow that checks out a pull request, code the pull request's author wrote. Like any action's files,
+the copy is only as safe as the job's earlier steps.
 
 The wrapper relies on `claude-code-action`'s internals: the `claude` that its Agent SDK bundles, and
 the SDK running in the process whose stdout is the step's log
