@@ -1,6 +1,8 @@
 # A real-world run to show what the log looks like: Claude fixes a failing test in demo/, rendered
 # live inside claude-code-action. The README's screenshots come from here, and its execution_file is
-# the fixture fixtures/claude/execution-file.json.
+# the fixture fixtures/claude/execution-file.json. The bug in demo/src/cart.js is the point of the
+# run, so no commit fixes it; CI does not run demo/'s tests. AGENTS.md says nothing more about it,
+# because the demo's agent reads AGENTS.md too and would stop to ask.
 # Runs Claude, so workflow_dispatch only (AGENTS.md rule 5).
 name: Demo
 
