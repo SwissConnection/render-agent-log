@@ -65,10 +65,9 @@ own copy, fixed by the `uses:` ref. A path in the checked-out tree runs whatever
 workflow that checks out a pull request, code the pull request's author wrote. Like any action's files,
 the copy is only as safe as the job's earlier steps.
 
-If the renderer dies or hangs, the run still completes, and the wrapper closes any group the
-renderer left open, so the action's own `::error::` lines still become annotations. The wrapper
-relies on `claude-code-action`'s internals
-([#2](https://github.com/SwissConnection/render-agent-log/issues/2)).
+If the renderer dies or hangs, the run still completes. If it dies mid-group, the wrapper closes the
+group, so the action's own `::error::` lines still become annotations. The wrapper relies on
+`claude-code-action`'s internals ([#2](https://github.com/SwissConnection/render-agent-log/issues/2)).
 
 ## Inputs and outputs
 

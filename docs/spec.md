@@ -107,11 +107,11 @@ Rules:
 
 One TypeScript package, bundled with esbuild to `dist/`, which is committed.
 
-The Action, `SwissConnection/render-agent-log@v1`, runs on `node24`, so no runner needs an install
+The Action, `SwissConnection/render-agent-log@v0`, runs on `node24`, so no runner needs an install
 step. Its modes:
 
 - `with: execution-file: ${{ steps.claude.outputs.execution_file }}` renders a finished run, for
-  `claude-code-action` users (#141's audience).
+  `claude-code-action` users (anthropics/claude-code-action#141's audience).
 - Without inputs, it puts the CLI on `PATH` for live piping:
   `claude -p … --output-format stream-json --verbose | render-agent-log`.
 - The same step also sets the `wrapper` output, passed to `claude-code-action` as
