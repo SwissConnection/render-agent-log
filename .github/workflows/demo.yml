@@ -1,0 +1,47 @@
+# A real-world run to show what the log looks like: Claude fixes a failing test in demo/, rendered
+# live inside claude-code-action. The README's screenshots come from here, and its execution_file is
+# the fixture fixtures/claude/execution-file.json.
+# Runs Claude, so workflow_dispatch only (AGENTS.md rule 5).
+name: Demo
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  demo:
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up render-agent-log
+        id: render
+        uses: ./
+
+      - name: Fix the failing test
+        id: claude
+        uses: anthropics/claude-code-action@9171db3e57d6a3140a37ddc2ba92788584e0ead6 # v1.0.234
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          path_to_claude_code_executable: ${{ steps.render.outputs.wrapper }}
+          prompt: |
+            The test suite of the small shop in demo/ fails (run it with `npm test` in demo/).
+            Find the cause, fix it in the source rather than the tests, and run the suite again.
+            Then say in two sentences what was wrong.
+          claude_args: |
+            --model sonnet
+            --allowedTools "Bash,Read,Edit,Grep,Glob"
+            --max-turns 15
+
+      - name: Keep the execution file
+        if: always() && steps.claude.outputs.execution_file != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: execution-file
+          path: ${{ steps.claude.outputs.execution_file }}

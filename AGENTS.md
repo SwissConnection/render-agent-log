@@ -11,6 +11,9 @@ without being told. What to build and why is in [docs/spec.md](docs/spec.md).
   [render-agent-log board](https://github.com/orgs/SwissConnection/projects/6). Start from the issue, not from memory.
 - **Consumer:** [SwissConnection/swissconn-workspace](https://github.com/SwissConnection/swissconn-workspace)
   runs Claude in three workflows. It is the first user, not the only one.
+- **Demo:** `demo/` is a tiny shop whose test fails on purpose, and `demo.yml` has Claude fix it
+  with the log rendered live: the README's screenshots. Leave the bug in; CI does not run
+  `demo/`'s tests.
 
 ## Worktrees
 
