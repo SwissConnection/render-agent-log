@@ -1,8 +1,5 @@
 # render-agent-log — specification
 
-Status: agreed 2026-09-25. Work is tracked in this repository's milestones (Spike, v0.1, Dogfood, v1)
-and on the [render-agent-log board](https://github.com/orgs/SwissConnection/projects/6).
-
 ## Problem
 
 A Claude Code run in GitHub Actions leaves either nothing readable (`claude-code-action` default) or
@@ -84,9 +81,6 @@ Rules:
    group, and a block left open would leave the rest of the step's commands inert, including the
    action's own `::error::` in wrapper mode (#6). The cost is that output copied from the log carries
    the `│` of each line.
-
-   This guards against output that contains commands, not against the agent: an agent with Bash can
-   write workflow commands into the step's log itself through `/proc`, with or without this tool (#2).
 3. Only SGR escape sequences (colors) from tool output reach the log, and only in the folded full
    output: previews, call arguments and prose are plain text. Other escape sequences, their 8-bit C1
    forms included, are stripped.
@@ -97,8 +91,8 @@ Rules:
    exits with 128 plus the signal number. When its reader goes away (EPIPE) it exits at once, since
    nothing more reaches the log. A renderer killed by SIGKILL cannot close its group, so the wrapper
    (#6) does.
-6. Secrets: this adds no exposure beyond `show_full_output`, and GitHub still masks them verbatim.
-   The README says so plainly.
+6. Secrets and the agent itself are outside what the renderer guards: it shows what
+   `show_full_output` would, and [README § Secrets](../README.md#secrets) says what that means.
 7. **The renderer's own colors adapt to the theme.** The log gives each of the 16 named colors a
    shade per theme, so the renderer uses only those, plus bold and italic, and no 256-color or
    truecolor codes, whose shades are fixed. It never uses black (30), which is hard to read on the
@@ -111,30 +105,21 @@ Rules:
 
 ## Packaging
 
-One TypeScript package, bundled with esbuild to `dist/`, which is committed. CI checks that `dist/`
-matches the source.
+One TypeScript package, bundled with esbuild to `dist/`, which is committed.
 
-- **Action** `SwissConnection/render-agent-log@v1`, `runs.using: node24`, so no install step on any runner:
-  - `with: execution-file: ${{ steps.claude.outputs.execution_file }}` renders a finished run. This is
-    for `claude-code-action` users, meaning #141's audience and our `claude.yml` / `claude-pr-summary.yml`.
-  - Without inputs, it puts the CLI on `PATH` for live piping:
-    `claude -p … --output-format stream-json --verbose | render-agent-log`.
-  - Live inside `claude-code-action`, it ships the wrapper from the spike (#2). The same step
-    without inputs sets the `wrapper` output, a path inside the Action's own directory, passed as
-    `path_to_claude_code_executable`. Never a path in the checked-out tree: the wrapper runs in the step
-    that holds the Claude token, and a checked-out pull request would decide what runs there. The wrapper
-    runs the `claude` that the action installs with the Agent SDK and passes the SDK its stream
-    untouched. `tee` copies the stream into a file, and the renderer follows the file into the step's
-    log (`/proc/$PPID/fd/1`, so Linux only). A file never fills, so a renderer that hangs or falls
-    behind cannot stall the agent. If the renderer exits non-zero, the wrapper closes the group for
-    it. If the parent's stdout is not a pipe, or is the wrapper's own stdout, a process sits between
-    the SDK and the wrapper, and the log is not where the wrapper expects it. The wrapper then renders
-    nothing and prints one `::warning::`. On other runner OSs the output is empty, with a
-    `::warning::`. The `stream-copy` input keeps the raw stream, off by default.
-- **npm** `@swissconnection/render-agent-log`: later, when someone wants it in a local terminal.
+The Action, `SwissConnection/render-agent-log@v0`, runs on `node24`, so no runner needs an install
+step. Its modes:
 
-The Action comes first because it is the product. The CLI is its live mode, not a separate
-deliverable.
+- `with: execution-file: ${{ steps.claude.outputs.execution_file }}` renders a finished run, for
+  `claude-code-action` users (anthropics/claude-code-action#141's audience).
+- Without inputs, it puts the CLI on `PATH` for live piping:
+  `claude -p … --output-format stream-json --verbose | render-agent-log`.
+- The same step also sets the `wrapper` output, passed to `claude-code-action` as
+  `path_to_claude_code_executable`: a wrapper around `claude` that renders a copy of its stream into
+  the step's log, Linux only. How it does that and how it fails safe is in
+  [`wrapper/claude-wrapper`](../wrapper/claude-wrapper).
+
+The CLI is the Action's live mode, not a separate deliverable.
 
 ## Engineering
 
@@ -146,41 +131,6 @@ deliverable.
   `::error::` / `::add-mask::` / `::endgroup::` / `##[…]` staying inert (checked by applying the
   runner's rules to the output), and a renderer stopped mid-group still closing it. No tests that
   restate the code.
-- **Fixtures:** real `stream-json` runs captured locally and sanitized, plus a hand-made stream of
-  hostile output (`fixtures/claude/README.md`). The execution-file format is tested by wrapping a
-  fixture into an array; one real execution file from swissconn-workspace is added during
-  dogfooding (#7).
-- **Agent guide:** an `AGENTS.md` in the repo, written the same way as the workspace's (pointers and
-  non-obvious rules). The key rule: a new SDK message type gets a rendering or an explicit drop,
-  decided in its own PR.
-
-## Milestones
-
-0. **Spike (hours), as this repo's first workflow.** Confirm on a real runner that ANSI renders
-   inside `::group::` titles, that `stop-commands` nests inside a group, that `●`, `⎿` and `✻`
-   render, and that colors read well in light and dark themes. Also try live output inside
-   `claude-code-action`: point `path_to_claude_code_executable` at a wrapper that tees the stream
-   into the renderer and writes to the action process's stdout (`/proc/$PPID/fd/1`, Linux only). If
-   it holds, every workflow gets live output without leaving the action. If not, the direct CLI
-   stays the live path. **Result (#2): it holds**, and `spike-wrapper.yml` re-checks it on dispatch
-   when the action is bumped. The render spike's `visual-check.yml` stays afterwards as a visual
-   check: it renders the fixtures into a real log on every PR.
-1. **Core and Action, v0.1.** Build the renderer, the fixtures, the three Action modes and a CI release.
-2. **Dogfood in swissconn-workspace.** Its three Claude workflows log through render-agent-log.
-   Live is preferred wherever its costs don't outweigh it. The dependency review uses nothing
-   `claude-code-action` adds, so it leaves the action for a direct `claude -p | render-agent-log`
-   call, which runs on any OS and does not depend on the action's internals. `claude.yml` (tag mode)
-   and `claude-pr-summary.yml` stay on the action and go live through the wrapper (#2).
-3. **v1 and discoverability.** Marketplace listing (branding, topics), a comment on
-   claude-code-action#141, a link request to claude-code-log (its TODO lists GitHub Actions), and
-   awesome-claude-code.
-
-## Decisions
-
-- **Name:** `render-agent-log`, verb-first like GitHub's own actions (`upload-artifact`,
-  `setup-node`). Marketplace display name "Render Agent Log", CLI `render-agent-log`. "Agent" leaves
-  room for tools other than Claude; only Claude is built.
-- **Live over after-the-run** wherever its costs don't outweigh it.
-- **Public from the start.** Workflows that run Claude trigger only on `push` and `workflow_dispatch`,
-  never on `pull_request` or `pull_request_target`, so a fork cannot reach the token. Fork PRs need
-  approval before any workflow runs.
+- **Fixtures:** real `stream-json` runs, sanitized, plus a hand-made stream of hostile output.
+  [`fixtures/claude/README.md`](../fixtures/claude/README.md) says what each covers and how to
+  capture one.

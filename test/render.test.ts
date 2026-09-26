@@ -1,6 +1,7 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { describe, expect, test } from "vitest";
 import { Renderer } from "../src/render.ts";
+import { red } from "../src/style.ts";
 import { fixture, liveCommands, render, visibleLines } from "./helpers.ts";
 
 const fixtures = [
@@ -25,6 +26,9 @@ describe.each(fixtures)("%s", (name) => {
     expect(await render(JSON.stringify(messages, null, 2))).toBe(await render(fixture(name)));
   });
 });
+
+// The escape code that opens the renderer's error color.
+const errorColor = red("·").slice(0, red("·").indexOf("·"));
 
 // The nearest line above `index` that starts at the top level with ●.
 function topLevelAbove(lines: string[], index: number): string | undefined {
@@ -69,16 +73,17 @@ describe("a result sits under its own call", () => {
 describe("errors stay red", () => {
   test("a failed call's preview", async () => {
     const lines = (await render(fixture("edit-and-bash"))).split("\n");
-    const failed = lines.findIndex((line) => line.includes("Bash\x1b[22m(npm test)"));
-    const passed = lines.findLastIndex((line) => line.includes("Bash\x1b[22m(npm test)"));
+    const isCall = (line: string) => visibleLines(line)[0] === "● Bash(npm test)";
+    const failed = lines.findIndex(isCall);
+    const passed = lines.findLastIndex(isCall);
     const preview = (start: number) => lines.slice(start + 1, start + 4);
-    for (const line of preview(failed)) expect(line).toContain("\x1b[31m");
-    for (const line of preview(passed)) expect(line).not.toContain("\x1b[31m");
+    for (const line of preview(failed)) expect(line).toContain(errorColor);
+    for (const line of preview(passed)) expect(line).not.toContain(errorColor);
   });
 
   test("a run that ends in an error", async () => {
     const lines = (await render(fixture("max-turns"))).split("\n");
-    expect(lines).toContain("\x1b[31m✻ error_max_turns · 3 turns · 3s · $0.02\x1b[0m");
+    expect(lines).toContain(red("✻ error_max_turns · 3 turns · 3s · $0.02"));
   });
 });
 
@@ -106,23 +111,25 @@ describe("hostile output", () => {
 });
 
 describe("a message the build does not know", () => {
-  const renderOne = (message: unknown) => new Renderer().render(message as unknown as SDKMessage);
+  // One visible line, not in the error color: the run did not fail.
+  const expectOneLine = (message: unknown, text: string) => {
+    const log = new Renderer().render(message as unknown as SDKMessage);
+    expect(visibleLines(log)).toEqual([text, ""]);
+    expect(log).not.toContain(errorColor);
+  };
 
-  test("prints one gray line for an unknown type", () => {
-    expect(renderOne({ type: "from_a_newer_sdk" })).toBe(
-      "\x1b[38;5;244m· from_a_newer_sdk\x1b[0m\n",
-    );
+  test("prints one line for an unknown type", () => {
+    expectOneLine({ type: "from_a_newer_sdk" }, "· from_a_newer_sdk");
   });
 
-  test("prints one gray line for an unknown system subtype", () => {
-    expect(renderOne({ type: "system", subtype: "from_a_newer_sdk" })).toBe(
-      "\x1b[38;5;244m· system/from_a_newer_sdk\x1b[0m\n",
-    );
+  test("prints one line for an unknown system subtype", () => {
+    expectOneLine({ type: "system", subtype: "from_a_newer_sdk" }, "· system/from_a_newer_sdk");
   });
 
-  test("prints one gray line for a message of a known type in a shape it does not know", () => {
-    expect(renderOne({ type: "assistant", message: null })).toBe(
-      "\x1b[38;5;244m· unrenderable assistant message (TypeError)\x1b[0m\n",
+  test("prints one line for a message of a known type in a shape it does not know", () => {
+    expectOneLine(
+      { type: "assistant", message: null },
+      "· unrenderable assistant message (TypeError)",
     );
   });
 });

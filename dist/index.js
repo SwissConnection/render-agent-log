@@ -218,7 +218,7 @@ var Renderer = class {
   #context = [];
   #cwd = "";
   #out = [];
-  // The log text for one message: whole lines, or "" for a message that prints nothing.
+  // The log text for one message: whole lines and whole groups, or "" for one that prints nothing.
   // A message that makes the renderer throw prints one gray line in place of what it had rendered.
   render(message) {
     this.#out = [];

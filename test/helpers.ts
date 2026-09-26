@@ -37,9 +37,7 @@ export interface Command {
 }
 
 // The workflow commands the runner would run for `log`, by its rules (actions/runner,
-// ActionCommandManager.TryProcessCommand): lines end at \r, \n or \r\n; a line is a command when it
-// starts with `::` after leading whitespace, or holds `##[` anywhere; after `stop-commands`, only
-// the token it names runs, and ends the stop. Any command name counts, registered or not.
+// ActionCommandManager.TryProcessCommand). Any command name counts, registered or not.
 export function liveCommands(log: string): Command[] {
   const commands: Command[] = [];
   let stopToken: string | undefined;

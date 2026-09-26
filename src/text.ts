@@ -1,6 +1,5 @@
-// Untrusted text (tool output, call arguments, agent text) made safe to print (spec, output rules 2
-// and 3). The runner reads step output with .NET's ReadLine, which ends a line at \r, \n or \r\n, and
-// runs a line as a command when it starts with `::` after leading whitespace, or holds `##[` anywhere.
+// Untrusted text (tool output, call arguments, agent text) made safe to print: spec, output rules
+// 2 and 3.
 
 // Escape sequences, per line: OSC, DCS, SOS, PM and APC strings (to their terminator or the end of
 // the line), CSI sequences, two-character escapes, and the 8-bit C1 forms of each. Then the C0

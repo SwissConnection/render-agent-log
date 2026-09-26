@@ -65,18 +65,9 @@ own copy, fixed by the `uses:` ref. A path in the checked-out tree runs whatever
 workflow that checks out a pull request, code the pull request's author wrote. Like any action's files,
 the copy is only as safe as the job's earlier steps.
 
-The wrapper relies on `claude-code-action`'s internals: the `claude` that its Agent SDK bundles, and
-the SDK running in the process whose stdout is the step's log
-([#2](https://github.com/SwissConnection/render-agent-log/issues/2) has the details). It fails safe:
-
-- If the renderer dies, the run completes. The wrapper closes the group the renderer left open, so
-  the action's own `::error::` lines still become annotations.
-- If the renderer hangs, the run completes unrendered. The renderer reads from a file, not a pipe,
-  so it cannot hold up the agent.
-- If a process ever sits between the SDK and the wrapper, the wrapper cannot trust where the log is.
-  It renders nothing and leaves a `::warning::`. Render the `execution_file` after the run instead.
-- On macOS and Windows runners the `wrapper` output is empty and the Action warns, so
-  `claude-code-action` runs its own `claude`, unrendered.
+If the renderer dies or hangs, the run still completes. If it dies mid-group, the wrapper closes the
+group, so the action's own `::error::` lines still become annotations. The wrapper relies on
+`claude-code-action`'s internals ([#2](https://github.com/SwissConnection/render-agent-log/issues/2)).
 
 ## Inputs and outputs
 

@@ -8,8 +8,6 @@
 #   That is why the file is not called claude and sits alone here.
 # - The action also runs this path for other subcommands (plugin install). Only the SDK's query passes
 #   --output-format stream-json, so everything else goes straight to the real claude.
-# - It runs with the OAuth token in its environment, so it must come from this Action's directory,
-#   pinned by the uses: ref, and never from a checked-out tree a pull request could change.
 set -euo pipefail
 
 # The native claude the SDK bundles, which the action installs with it: the version always matches the
@@ -57,7 +55,7 @@ tee=$!
 # tail stops once tee is gone, and only then: tee is claude's child after the exec below, so it stays a
 # zombie until claude exits, and it writes the stream's last lines after claude's.
 # A renderer that exits non-zero, SIGKILL included, may leave a group open, which would fold the rest
-# of the step's log into it, the action's own ::error:: included. The wrapper closes it at once.
+# of the step's log into it, the action's own ::error:: included.
 {
   set +e
   "${RENDER_AGENT_LOG_NODE:-node}" "$root/dist/index.js" < <(tail -f -n +1 --pid="$tee" -- "$buffer") ||
