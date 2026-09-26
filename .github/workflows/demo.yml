@@ -31,7 +31,7 @@ jobs:
           github_token: ${{ github.token }}
           path_to_claude_code_executable: ${{ steps.render.outputs.wrapper }}
           prompt: |
-            The test suite of the small shop in demo/ fails (run it with `npm test` in demo/).
+            The test suite of the small shop in demo/ fails (run it with `npm test --silent` in demo/).
             Find the cause, fix it in the source rather than the tests, and run the suite again.
             Then say in two sentences what was wrong.
           claude_args: |
