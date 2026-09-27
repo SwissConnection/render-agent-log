@@ -14,7 +14,7 @@ pretty-printed JSON object per message. Headless `claude -p` gives you the final
 </picture>
 
 That is Claude fixing a failing test in [`demo/`](demo/), inside `claude-code-action`. The log above
-is [the run itself](https://github.com/SwissConnection/render-agent-log/actions/runs/36229359850/job/108369445209#step:4:266),
+is [the run itself](https://github.com/SwissConnection/render-agent-log/actions/runs/36229359850/job/108369445209#step:4:276),
 starting at the first rendered line; everything before it is the action's own setup output.
 [`demo.yml`](.github/workflows/demo.yml) is the whole workflow.
 
@@ -91,27 +91,27 @@ Each screenshot links to the step in the run it came from.
 
 **Full output, folded.** Each call shows its first three lines; the rest is one click away. An edit
 shows the changed lines, and the fold holds the whole diff.
-([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36229359850/job/108369445209#step:4:357))
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36229359850/job/108369445209#step:4:370))
 
 <img alt="An Edit call with its changed lines, and the expanded fold holding the full diff" src="docs/images/fold-diff.png" width="640">
 
 **Subagents.** A subagent's calls sit under the Agent call that started it, one `│` per level. When
 subagents run in the background and their messages interleave, each line still lands under its own
 Agent call, and a tool result always sits under its own call.
-([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36205877687/job/108302188131#step:5:6))
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36205877687/job/108302188131#step:5:7))
 
 <img alt="An Agent call with the subagent's Grep and Glob calls nested under it" src="docs/images/subagent.png" width="760">
 
 **Failures.** Failed tool calls and a run that ends in an error are red, with the reason under the
 summary line.
-([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36205877687/job/108302188131#step:8:6))
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36205877687/job/108302188131#step:8:7))
 
 <img alt="A run that hit its turn limit: the summary line in red with the error under it" src="docs/images/max-turns.png" width="640">
 
 **Tool output can't issue workflow commands.** GitHub runs any log line that starts with `::`, so a
 changelog, a web page or a test that prints `::error::` or `::add-mask::` would otherwise add
 annotations or hide text in your log. Here they print as text.
-([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36205877687/job/108302188131#step:11:6))
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36205877687/job/108302188131#step:11:10))
 
 <img alt="Tool output containing ::error:: and ::add-mask:: lines, shown as plain text" src="docs/images/hostile-output.png" width="640">
 
