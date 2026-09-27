@@ -11,6 +11,7 @@ hand-made stream of hostile tool output. The renderer's golden files and targete
 | `thinking.jsonl` | Captured with `--thinking-display summarized`: a `thinking` block with text, a Read, the answer, and a run of `system/thinking_tokens` |
 | `max-turns.jsonl` | `--max-turns 2`: the final `result` is `error_max_turns` with `is_error: true` and `errors` |
 | `hostile-output.jsonl` | Hand-made (see below) |
+| `execution-file.json` | `claude-code-action`'s `execution_file` from a `demo.yml` run, as the action writes it: one pretty-printed JSON array. Claude fixes the demo shop's failing test: Bash, Grep, Read, an Edit, a failed `cd` |
 
 Shapes worth knowing:
 
