@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "description": "Render agent runs as readable, colored, collapsible logs in the GitHub Actions UI",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "repository": "github:SwissConnection/render-agent-log",
   "type": "module",
   "engines": {

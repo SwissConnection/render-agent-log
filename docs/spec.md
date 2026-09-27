@@ -92,7 +92,7 @@ Rules:
    nothing more reaches the log. A renderer killed by SIGKILL cannot close its group, so the wrapper
    (#6) does.
 6. Secrets and the agent itself are outside what the renderer guards: it shows what
-   `show_full_output` would, and [README § Secrets](../README.md#secrets) says what that means.
+   `show_full_output` would, and [README § Safety](../README.md#safety) says what that means.
 7. **The renderer's own colors adapt to the theme.** The log gives each of the 16 named colors a
    shade per theme, so the renderer uses only those, plus bold and italic, and no 256-color or
    truecolor codes, whose shades are fixed. It never uses black (30), which is hard to read on the
