@@ -12,6 +12,6 @@ What we most want to hear about:
 - A way for the wrapper to run code that isn't this Action's own copy, or to leak the Claude token.
 
 Out of scope: an agent with a shell writing workflow commands into the log directly. It can do that
-with or without this Action (see [README § Secrets](README.md#secrets)).
+with or without this Action (see [README § Safety](README.md#safety)).
 
 Fixes go into the latest `v0.x` release.
