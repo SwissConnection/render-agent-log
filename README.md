@@ -158,9 +158,9 @@ annotations or hide text in your log. Here they print as text.
 
 <img alt="Tool output containing ::error:: and ::add-mask:: lines, shown as plain text" src="docs/images/hostile-output.png" width="640">
 
-The [visual check](https://github.com/SwissConnection/render-agent-log/actions/workflows/visual-check.yml?query=branch%3Amain)
-renders every fixture the tests use, on every change to `main`. Its latest run shows the rest: parallel
-calls whose results come back out of order, thinking, and an execution file.
+The visual check renders every fixture the tests use, on every change to `main`.
+[Its run for this release](https://github.com/SwissConnection/render-agent-log/actions/runs/36337071245/job/108669842972)
+shows the rest: parallel calls whose results come back out of order, thinking, and an execution file.
 
 ---
 <br/>
