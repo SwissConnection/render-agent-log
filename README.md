@@ -1,8 +1,9 @@
 # render-agent-log
 
-A GitHub Action that turns a Claude Code run into a log you can read in the Actions UI: one line per
-tool call, the first lines of its output under it, the rest folded away, and a summary line at the
-end. It works live, while the agent runs, or on a finished run.
+A GitHub Action that turns a Claude Code run into a log you can read in the GitHub Actions UI.
+
+It gives you one line per tool call, with basic highlighting and fold-away blocks for the details.
+It works live, while the agent runs, or on a finished run.
 
 Without it, `claude-code-action` logs either the final result only, or, with `show_full_output`, one
 pretty-printed JSON object per message. Headless `claude -p` gives you the final answer or raw
@@ -13,9 +14,8 @@ pretty-printed JSON object per message. Headless `claude -p` gives you the final
   <img alt="A Claude Code run in the GitHub Actions log: a failing test, the files it read, the edit as a diff, the tests passing, and a summary line" src="docs/images/demo-light.png">
 </picture>
 
-That is Claude fixing a failing test in [`demo/`](demo/), inside `claude-code-action`. The log above
-is [the run itself](https://github.com/SwissConnection/render-agent-log/actions/runs/36229359850/job/108369445209#step:4:276),
-starting at the first rendered line; everything before it is the action's own setup output.
+That is Claude fixing a failing test in [`demo/`](demo/), inside `claude-code-action`. You can check
+out the log above [in this run](https://github.com/SwissConnection/render-agent-log/actions/runs/36229359850/job/108369445209#step:4:276).
 [`demo.yml`](.github/workflows/demo.yml) is the whole workflow.
 
 ## Usage
@@ -144,4 +144,4 @@ Claude Code only, for now. The message format is Claude's own (`stream-json`, ty
 SDK); other agents would each need an adapter. The design is in [docs/spec.md](docs/spec.md), and
 [SECURITY.md](SECURITY.md) says how to report a vulnerability.
 
-MIT licensed.
+Licensed under Apache-2.0 (see [LICENSE](LICENSE) and [NOTICE](NOTICE)).
