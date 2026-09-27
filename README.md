@@ -23,7 +23,7 @@ Out of the box, a Claude Code run in CI logs either its final answer or, with `c
 `show_full_output`, every message the agent exchanged, pretty-printed as JSON. The first tool call of
 the run above looks like this:
 
-```json
+```jsonc
 {
   "type": "assistant",
   "message": {
@@ -39,7 +39,7 @@ the run above looks like this:
         "input": {
           "command": "cd demo && npm test --silent 2>&1 | tail -80"
         },
-…
+        // … 36 more lines of ids, token usage and metadata
 ```
 
 That is 51 lines, and the whole run is about 1,000. render-agent-log prints the same call as
