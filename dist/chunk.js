@@ -52865,11 +52865,11 @@ function diffOutput(result) {
     const code2 = cleanLines(write.content, language === void 0);
     const styled = language === void 0 ? [] : highlight(code2, language);
     code2.forEach((line, index) => {
-      const code3 = styled[index];
+      const styledLine = styled[index];
       lines.push({
         text: `+${line}`,
         tone: "added",
-        ...code3 !== void 0 && { styled: `${green("+")}${code3}` }
+        ...styledLine !== void 0 && { styled: `${green("+")}${styledLine}` }
       });
     });
   }

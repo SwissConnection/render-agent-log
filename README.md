@@ -48,7 +48,7 @@ That is 51 lines, and the whole run is about 1,000. render-agent-log prints the 
 ● Bash(cd demo && npm test --silent 2>&1 | tail -80)
 ```
 
-and the whole run in 32 lines, with each tool's full output one click away.
+and the whole run in 27 lines, with each tool's full output one click away.
 
 ---
 <br/>

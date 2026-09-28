@@ -46,12 +46,12 @@ dropped silently and never crashes the renderer.
 | assistant `thinking` | gray `✻` and gray italic text, indented like `text`. Thinking without text (only a signature, the default) prints nothing |
 | assistant `tool_use` | green `●` **Tool**(main argument, one line, ≤140 characters; a path under `cwd` relative to it) |
 | user `tool_result` | up to 3 preview lines that are not blank, the last under `└` and the ones above it under `│` (gray, red if `is_error`; not Claude Code's `⎿`, which falls back to a wider font in the log). Then, when the preview does not show all of it, the full output in `::group::… N lines`, indented |
-| Read result | a text file's `tool_use_result.file.content`, numbered from `startLine` and highlighted in a language rule 8 knows. The numbers are right-aligned and gray in the fold, followed by spaces rather than the tool's tab: the log's tab stops in a fold are offset by its indent. The preview skips blank lines. Other reads (images, PDFs, notebooks) show `content` |
+| Read result | a text file's `tool_use_result.file.content`, numbered from `startLine` and highlighted in a language rule 8 knows. The numbers are right-aligned, gray in the fold, and followed by two spaces, not the tool's tab. The preview skips blank lines. Other reads (images, PDFs, notebooks) show `content` |
 | Edit/Write result | colored diff from `tool_use_result.structuredPatch` (a new file: its content as added lines). The preview shows the changed lines. In a highlighted language, a hunk's context lines are highlighted and its changed lines stay red and green whole, so they stand out; a new file is highlighted after a green `+` |
 | Bash result | `stdout`, then `stderr` in yellow, from `tool_use_result`. On a failed call `tool_use_result` is a plain string, so it shows `content`, in red |
 | Agent result | `content`, which is an array of text blocks |
 | user text | gray `›` and the text, previewed and folded like tool output: a subagent's prompt, or a message injected into the run |
-| subagent messages (`parent_tool_use_id` set) | indented under the Agent call by a gray `│` per level, except on a fold, title and lines: the log draws the group's triangle before its title and indents its lines by its own amount, so the `│` there would not line up with the ones outside |
+| subagent messages (`parent_tool_use_id` set) | indented under the Agent call by a gray `│` per level. A fold, title and lines, has no gutter |
 | `result` | `✻ <subtype> · N turns · Ns · $X` (green, or red on error with the `errors` under it). A line per `result`: a run with background subagents sends several. Turns and duration count per result, while `total_cost_usd` is the session's total so far |
 | `system/api_retry`, `compact_boundary`, `informational`, `notification`, `hook_response`, `local_command_output`, `model_refusal_*` | one line: yellow for a retry, a warning or a refusal fallback, red for a refusal or a failed hook, gray otherwise |
 | `active_goal` | gray `· goal: <condition> · N iterations · <last reason>`, or `· goal cleared` |
@@ -159,8 +159,9 @@ The CLI is the Action's live mode, not a separate deliverable.
 - **Tests:** golden files rendered from fixtures, plus targeted cases for the silent wrong answers:
   parallel-call attribution, errors staying red, subagent nesting, the unknown-type line, injected
   `::error::` / `::add-mask::` / `::endgroup::` / `##[…]` staying inert (checked by applying the
-  runner's rules to the output), and a renderer stopped mid-group still closing it. No tests that
-  restate the code.
+  runner's rules to the output), a renderer stopped mid-group still closing it, and, for every
+  language highlight.js has, highlighting that changes colors and never text. No tests that restate
+  the code.
 - **Fixtures:** real `stream-json` runs, sanitized, plus a hand-made stream of hostile output.
   [`fixtures/claude/README.md`](../fixtures/claude/README.md) says what each covers and how to
   capture one.
