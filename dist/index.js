@@ -464,7 +464,7 @@ var Renderer = class {
   #fold(depth, lines) {
     const count = `\u2026 ${lines.length} line${lines.length === 1 ? "" : "s"}`;
     this.#out.push(`::group::${this.#gutter(depth)}${gray(count)}`);
-    for (const { text, tone } of lines) this.#line(depth, blank, foldedTone[tone](text));
+    for (const { text, tone } of lines) this.#line(0, blank, foldedTone[tone](text));
     this.#out.push("::endgroup::");
   }
   // The agent's text or thinking: `marker` on the first line, indented under it on the ones after.

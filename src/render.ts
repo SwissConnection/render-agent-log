@@ -334,7 +334,9 @@ export class Renderer {
   #fold(depth: number, lines: OutputLine[]): void {
     const count = `… ${lines.length} line${lines.length === 1 ? "" : "s"}`;
     this.#out.push(`::group::${this.#gutter(depth)}${gray(count)}`);
-    for (const { text, tone } of lines) this.#line(depth, blank, foldedTone[tone](text));
+    // The log indents a group's lines by its own amount, so a subagent's gutter in there would not
+    // line up with the one outside: folded lines go without it.
+    for (const { text, tone } of lines) this.#line(0, blank, foldedTone[tone](text));
     this.#out.push("::endgroup::");
   }
 

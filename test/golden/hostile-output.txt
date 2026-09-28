@@ -77,11 +77,11 @@
 [38;5;244m│ [0m[38;5;244m│[0m [38;5;244m::error::from a web page[0m
 [38;5;244m│ [0m[38;5;244m└[0m [38;5;244m::add-mask::web-mask-value[0m
 ::group::[38;5;244m│ [0m[38;5;244m… 5 lines[0m
-[38;5;244m│ [0m[0m  Release 3.0.0
-[38;5;244m│ [0m[0m  ::error::from a web page
-[38;5;244m│ [0m[0m  ::add-mask::web-mask-value
-[38;5;244m│ [0m[0m  ::endgroup::
-[38;5;244m│ [0m[0m  ::warning::behind OSC on a web page
+[0m  Release 3.0.0
+[0m  ::error::from a web page
+[0m  ::add-mask::web-mask-value
+[0m  ::endgroup::
+[0m  ::warning::behind OSC on a web page
 ::endgroup::
 [38;5;244m│ [0m● The latest release is 3.0.0. The page also contained:
 [38;5;244m│ [0m[0m  Release 3.0.0

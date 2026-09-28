@@ -2,7 +2,7 @@
 [32m●[0m [1mAgent[22m(List exported functions in src)
 [38;5;244m│ [0m[38;5;244m›[0m [38;5;244mList every exported function in the src/ directory (relative to the current working directory), together with the file it is defined in. Include function declarations, exported arrow/function express…[0m
 ::group::[38;5;244m│ [0m[38;5;244m… 1 line[0m
-[38;5;244m│ [0m[0m  List every exported function in the src/ directory (relative to the current working directory), together with the file it is defined in. Include function declarations, exported arrow/function expressions assigned to const, and re-exported functions if applicable. Return a concise list in the format `functionName — path/to/file`. If src/ doesn't exist or has no exports, say so.
+[0m  List every exported function in the src/ directory (relative to the current working directory), together with the file it is defined in. Include function declarations, exported arrow/function expressions assigned to const, and re-exported functions if applicable. Return a concise list in the format `functionName — path/to/file`. If src/ doesn't exist or has no exports, say so.
 ::endgroup::
 [38;5;244m│ [0m[32m●[0m [1mGrep[22m(^\s*export\s|module\.exports|exports\.)
 [38;5;244m│ [0m[38;5;244m│[0m [38;5;244msrc/greet.js:1:export function greet(name) {[0m
