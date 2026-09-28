@@ -1,16 +1,16 @@
 [38;5;244m✻ claude-sonnet-5 · /home/runner/work/demo/demo[0m
 [32m●[0m [1mRead[22m(src/sum.js)
-[38;5;244m│[0m [38;5;244m1	export function sum(values) {[0m
-[38;5;244m│[0m [38;5;244m2	  let total = 0;[0m
-[38;5;244m└[0m [38;5;244m3	  for (let i = 0; i <= values.length; i++) {[0m
+[38;5;244m│[0m [38;5;244m1  export function sum(values) {[0m
+[38;5;244m│[0m [38;5;244m2    let total = 0;[0m
+[38;5;244m└[0m [38;5;244m3    for (let i = 0; i <= values.length; i++) {[0m
 ::group::[38;5;244m… 7 lines[0m
-[0m  [38;5;244m1[0m	[35mexport[39m [35mfunction[39m [33msum[39m(values) {
-[0m  [38;5;244m2[0m	  [35mlet[39m total = [34m0[39m;
-[0m  [38;5;244m3[0m	  [35mfor[39m ([35mlet[39m i = [34m0[39m; i <= values.[34mlength[39m; i++) {
-[0m  [38;5;244m4[0m	    total += values[i];
-[0m  [38;5;244m5[0m	  }
-[0m  [38;5;244m6[0m	  [35mreturn[39m total;
-[0m  [38;5;244m7[0m	}
+[0m  [38;5;244m1[0m  [35mexport[39m [35mfunction[39m [33msum[39m(values) {
+[0m  [38;5;244m2[0m    [35mlet[39m total = [34m0[39m;
+[0m  [38;5;244m3[0m    [35mfor[39m ([35mlet[39m i = [34m0[39m; i <= values.[34mlength[39m; i++) {
+[0m  [38;5;244m4[0m      total += values[i];
+[0m  [38;5;244m5[0m    }
+[0m  [38;5;244m6[0m    [35mreturn[39m total;
+[0m  [38;5;244m7[0m  }
 ::endgroup::
 [38;5;244m✻[0m [3;38;5;244mThe loop condition goes one past the array's last index, so it reads an undefined value each time and NaN contaminates the total—this also breaks empty arrays (should be 0), string arrays (concatenation instead of NaN), and sparse arrays (holes read as undefined).[0m
 ● [1;36msum()[22;39m has an off-by-one bug: the loop runs to [1;36mi <= values.length[22;39m, so it reads [1;36mvalues[values.length][22;39m, which is [1;36mundefined[22;39m, and adds it to the total. Every call therefore returns [1;36mNaN[22;39m for numeric input, including [1;36msum([])[22;39m, which should be [1;36m0[22;39m but gives [1;36mNaN[22;39m.

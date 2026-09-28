@@ -1,29 +1,29 @@
 [38;5;244m✻ claude-sonnet-5 · /home/runner/work/demo/demo[0m
 [32m●[0m [1mRead[22m(src/sum.js)
-[38;5;244m│[0m [38;5;244m1	export function sum(values) {[0m
-[38;5;244m│[0m [38;5;244m2	  let total = 0;[0m
-[38;5;244m└[0m [38;5;244m3	  for (let i = 0; i <= values.length; i++) {[0m
+[38;5;244m│[0m [38;5;244m1  export function sum(values) {[0m
+[38;5;244m│[0m [38;5;244m2    let total = 0;[0m
+[38;5;244m└[0m [38;5;244m3    for (let i = 0; i <= values.length; i++) {[0m
 ::group::[38;5;244m… 7 lines[0m
-[0m  [38;5;244m1[0m	[35mexport[39m [35mfunction[39m [33msum[39m(values) {
-[0m  [38;5;244m2[0m	  [35mlet[39m total = [34m0[39m;
-[0m  [38;5;244m3[0m	  [35mfor[39m ([35mlet[39m i = [34m0[39m; i <= values.[34mlength[39m; i++) {
-[0m  [38;5;244m4[0m	    total += values[i];
-[0m  [38;5;244m5[0m	  }
-[0m  [38;5;244m6[0m	  [35mreturn[39m total;
-[0m  [38;5;244m7[0m	}
+[0m  [38;5;244m1[0m  [35mexport[39m [35mfunction[39m [33msum[39m(values) {
+[0m  [38;5;244m2[0m    [35mlet[39m total = [34m0[39m;
+[0m  [38;5;244m3[0m    [35mfor[39m ([35mlet[39m i = [34m0[39m; i <= values.[34mlength[39m; i++) {
+[0m  [38;5;244m4[0m      total += values[i];
+[0m  [38;5;244m5[0m    }
+[0m  [38;5;244m6[0m    [35mreturn[39m total;
+[0m  [38;5;244m7[0m  }
 ::endgroup::
 [32m●[0m [1mRead[22m(src/sum.test.js)
-[38;5;244m│[0m [38;5;244m1	import { test } from "node:test";[0m
-[38;5;244m│[0m [38;5;244m2	import assert from "node:assert/strict";[0m
-[38;5;244m└[0m [38;5;244m3	import { sum } from "./sum.js";[0m
+[38;5;244m│[0m [38;5;244m1  import { test } from "node:test";[0m
+[38;5;244m│[0m [38;5;244m2  import assert from "node:assert/strict";[0m
+[38;5;244m└[0m [38;5;244m3  import { sum } from "./sum.js";[0m
 ::group::[38;5;244m… 7 lines[0m
-[0m  [38;5;244m1[0m	[35mimport[39m { test } [35mfrom[39m [36m"node:test"[39m;
-[0m  [38;5;244m2[0m	[35mimport[39m assert [35mfrom[39m [36m"node:assert/strict"[39m;
-[0m  [38;5;244m3[0m	[35mimport[39m { sum } [35mfrom[39m [36m"./sum.js"[39m;
-[0m  [38;5;244m4[0m	
-[0m  [38;5;244m5[0m	[33mtest[39m([36m"sums a list"[39m, () => {
-[0m  [38;5;244m6[0m	  assert.[33mequal[39m([33msum[39m([[34m1[39m, [34m2[39m, [34m3[39m]), [34m6[39m);
-[0m  [38;5;244m7[0m	});
+[0m  [38;5;244m1[0m  [35mimport[39m { test } [35mfrom[39m [36m"node:test"[39m;
+[0m  [38;5;244m2[0m  [35mimport[39m assert [35mfrom[39m [36m"node:assert/strict"[39m;
+[0m  [38;5;244m3[0m  [35mimport[39m { sum } [35mfrom[39m [36m"./sum.js"[39m;
+[0m  [38;5;244m4[0m
+[0m  [38;5;244m5[0m  [33mtest[39m([36m"sums a list"[39m, () => {
+[0m  [38;5;244m6[0m    assert.[33mequal[39m([33msum[39m([[34m1[39m, [34m2[39m, [34m3[39m]), [34m6[39m);
+[0m  [38;5;244m7[0m  });
 ::endgroup::
 [32m●[0m [1mBash[22m(npm test)
 [38;5;244m│[0m [31mExit code 1[0m

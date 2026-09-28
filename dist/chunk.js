@@ -8918,16 +8918,17 @@ function readOutput(result) {
   const language = languageOf(filePath);
   const code2 = cleanLines(content, language === void 0);
   const styled = language === void 0 ? code2 : highlight(code2, language);
-  return {
-    lines: code2.map((text, index) => {
-      const number = String(startLine + index);
-      return {
-        text: `${number}	${text}`,
-        tone: "plain",
-        styled: `${gray(number)}	${styled[index] ?? ""}`
-      };
-    })
-  };
+  const width = String(startLine + code2.length - 1).length;
+  const lines = code2.map((text, index) => {
+    const number = String(startLine + index).padStart(width);
+    const gap = text === "" ? "" : "  ";
+    return {
+      text: `${number}${gap}${text}`,
+      tone: "plain",
+      styled: `${gray(number)}${gap}${styled[index] ?? ""}`
+    };
+  });
+  return { lines, preview: lines.filter((_line, index) => code2[index]?.trim() !== "") };
 }
 function diffOutput(result) {
   const patches = result.structuredPatch;

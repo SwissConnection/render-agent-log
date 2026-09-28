@@ -113,8 +113,10 @@ function isPatch(value: unknown): value is Patch {
   );
 }
 
-// A Read of a text file: its content, numbered from where the read started as the tool numbers it
-// for the model, and highlighted when this build knows its language.
+// A Read of a text file: its content, numbered from where the read started, and highlighted when
+// this build knows its language. The numbers are aligned with spaces: the tool puts a tab after each,
+// but the log's tab stops in a fold are offset by the fold's indent, so a tab after `9` and one after
+// `10` could end on different stops.
 function readOutput(result: Json): Output | undefined {
   const { file } = result;
   if (result.type !== "text" || !isObject(file)) return undefined;
@@ -124,16 +126,18 @@ function readOutput(result: Json): Output | undefined {
   const language = languageOf(filePath);
   const code = cleanLines(content, language === undefined);
   const styled = language === undefined ? code : highlight(code, language);
-  return {
-    lines: code.map((text, index) => {
-      const number = String(startLine + index);
-      return {
-        text: `${number}\t${text}`,
-        tone: "plain",
-        styled: `${gray(number)}\t${styled[index] ?? ""}`,
-      };
-    }),
-  };
+  const width = String(startLine + code.length - 1).length;
+  const lines = code.map((text, index): OutputLine => {
+    const number = String(startLine + index).padStart(width);
+    const gap = text === "" ? "" : "  ";
+    return {
+      text: `${number}${gap}${text}`,
+      tone: "plain",
+      styled: `${gray(number)}${gap}${styled[index] ?? ""}`,
+    };
+  });
+  // The preview skips the lines that are only a number.
+  return { lines, preview: lines.filter((_line, index) => code[index]?.trim() !== "") };
 }
 
 // Edit and Write results: the hunks of `structuredPatch`, or a new file's content as added lines.
