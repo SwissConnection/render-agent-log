@@ -7,11 +7,11 @@ It works live, while the agent runs, or on a finished run.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/demo-dark.png">
-  <img alt="A Claude Code run in the GitHub Actions log: a failing test, the files it read, the edit as a diff, the tests passing, and a summary line" src="docs/images/demo-light.png">
+  <img alt="A Claude Code run in the GitHub Actions log: a failing test, the files it read with one expanded and syntax-highlighted, the edit as a diff, the tests passing, and a summary line" src="docs/images/demo-light.png">
 </picture>
 
 That is Claude fixing a failing test in [`demo/`](demo/), inside `claude-code-action`. You can check
-out the log above [in this run](https://github.com/SwissConnection/render-agent-log/actions/runs/36229359850/job/108369445209#step:4:276).
+out the log above [in this run](https://github.com/SwissConnection/render-agent-log/actions/runs/36433710396/job/108966118283#step:4:279).
 [`demo.yml`](.github/workflows/demo.yml) is the whole workflow.
 
 ---
@@ -21,7 +21,7 @@ out the log above [in this run](https://github.com/SwissConnection/render-agent-
 
 Out of the box, a Claude Code run in CI logs either its final answer or, with `claude-code-action`'s
 `show_full_output`, every message the agent exchanged, pretty-printed as JSON. The first tool call of
-the run above looks like this:
+a run like the one above looks like this:
 
 ```jsonc
 {
@@ -136,7 +136,7 @@ Each screenshot links to the line in the run it came from.
 
 **Full output, folded.** Each call shows its first three lines; the rest is one click away. An edit
 shows the changed lines, and the fold holds the whole diff.
-([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36229359850/job/108369445209#step:4:370))
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36433710396/job/108966118283#step:4:368))
 
 <img alt="An Edit call with its changed lines, and the expanded fold holding the full diff" src="docs/images/fold-diff.png" width="640">
 
@@ -154,25 +154,25 @@ around them. Output that Claude prints with `cat` is not a file read, so it stay
 **Subagents.** A subagent's calls sit under the Agent call that started it, one `│` per level. When
 subagents run in the background and their messages interleave, each line still lands under its own
 Agent call, and a tool result always sits under its own call.
-([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36205877687/job/108302188131#step:5:7))
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36433482518/job/108965348196#step:7:7))
 
 <img alt="An Agent call with the subagent's Grep and Glob calls nested under it" src="docs/images/subagent.png" width="760">
 
 **Failures.** Failed tool calls and a run that ends in an error are red, with the reason under the
 summary line.
-([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36205877687/job/108302188131#step:8:7))
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36433482518/job/108965348196#step:10:7))
 
 <img alt="A run that hit its turn limit: the summary line in red with the error under it" src="docs/images/max-turns.png" width="640">
 
 **Tool output can't issue workflow commands.** GitHub runs any log line that starts with `::`, so a
 changelog, a web page or a test that prints `::error::` or `::add-mask::` would otherwise add
 annotations or hide text in your log. Here they print as text.
-([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36205877687/job/108302188131#step:11:10))
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36433482518/job/108965348196#step:13:11))
 
 <img alt="Tool output containing ::error:: and ::add-mask:: lines, shown as plain text" src="docs/images/hostile-output.png" width="640">
 
 The visual check renders every fixture the tests use, on every change to `main`.
-[Its run for this release](https://github.com/SwissConnection/render-agent-log/actions/runs/36337071245/job/108669842972)
+[Its run for this release](https://github.com/SwissConnection/render-agent-log/actions/runs/36433482518/job/108965348196)
 shows the rest: parallel calls whose results come back out of order, thinking, and an execution file.
 
 ---
