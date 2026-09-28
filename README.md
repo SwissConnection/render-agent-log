@@ -140,6 +140,18 @@ shows the changed lines, and the fold holds the whole diff.
 
 <img alt="An Edit call with its changed lines, and the expanded fold holding the full diff" src="docs/images/fold-diff.png" width="640">
 
+**Syntax highlighting.** In the fold, a file that Claude reads or writes is highlighted by its
+name: TypeScript, JavaScript, Python, shell, Go, Rust, Java, C and C++, Ruby, SQL, CSS, HTML, JSON,
+YAML, TOML, Markdown, Dockerfiles and Makefiles. A diff keeps its changed lines red and green whole
+and highlights the code around them. Output that Claude prints with `cat` is not a file read, so it
+stays plain.
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36419296891/job/108917882109#step:4:336))
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/highlighting-dark.png">
+  <img alt="Two Read calls and an Edit call: the file in the fold highlighted with numbered lines, and the diff's context highlighted around its red and green changed lines" src="docs/images/highlighting-light.png" width="658">
+</picture>
+
 **Subagents.** A subagent's calls sit under the Agent call that started it, one `│` per level. When
 subagents run in the background and their messages interleave, each line still lands under its own
 Agent call, and a tool result always sits under its own call.
