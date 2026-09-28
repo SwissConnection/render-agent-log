@@ -2,7 +2,8 @@
 
 Renders agent runs (Claude Code first) as readable, colored, collapsible logs in the GitHub Actions UI.
 This file is for discoverability: what exists, where it lives, and the rules an agent gets wrong
-without being told. What to build and why is in [docs/spec.md](docs/spec.md).
+without being told. What to build and why is in [docs/spec.md](docs/spec.md); what well-made looks
+like here, with the exemplars to imitate, is in [docs/craft.md](docs/craft.md).
 
 ## Where work lives
 
@@ -14,12 +15,28 @@ without being told. What to build and why is in [docs/spec.md](docs/spec.md).
 - **Demo:** `demo.yml` has Claude fix the failing test of the tiny shop in `demo/`, rendered live:
   the README's screenshots come from its runs.
 
-## Branches
+## Checkouts
 
-A regular clone. One branch per issue, `<n>-<slug>` from `origin/main`; squash-merged PRs leave no
-branch worth keeping, so delete the branch once its PR is in. No secrets or caches live in the
-checkout, so there is nothing to link or inject. Parallel work fits a `git worktree` per issue if
-you want one; nothing here depends on the layout.
+One branch per issue, `<n>-<slug>` from `origin/main`. Squash merges leave no branch worth keeping,
+so delete a branch once its PR is in. No secrets or caches live in a checkout, so there is nothing
+to link or inject. Two layouts are in use; nothing here depends on which:
+
+- **A regular clone**, for work items that build on each other.
+- **A bare hub** for parallel work, laid out like swissconn-workspace's but with no scripts:
+
+  ```text
+  render-agent-log-wt/
+    .bare/          # the repository
+    main/           # locked; kept on origin/main (git pull --ff-only)
+    <n>-<slug>/     # one worktree per issue, branch <n>-<slug>
+  ```
+
+  New tree, from the hub: `git fetch origin && git worktree add <n>-<slug> -b <n>-<slug> origin/main`,
+  then `npm ci` in it. After the PR merges: `git worktree remove <n>-<slug> && git branch -D <n>-<slug>`,
+  then `git -C main hook run post-checkout`, which regenerates `render-agent-log-wt.code-workspace`
+  (the hub's `.bare/hooks/post-checkout` runs it after every `worktree add` too; never edit that file by
+  hand). Before adding a tree, remove the ones whose PR has merged: after `git fetch --prune origin`,
+  `git branch -vv` marks their branches `[gone]`. Never remove the tree you are working in.
 
 ## Commands
 
@@ -61,9 +78,9 @@ may reach `dist/`. highlight.js, with every language it has, is the one runtime 
 5. **Workflows that run Claude trigger only on `push` or `workflow_dispatch`.** This repository is
    public; never `pull_request` or `pull_request_target` for a job that holds a token.
 6. **Tests catch silent wrong answers**; no test restates the code under test
-   ([spec § Engineering](docs/spec.md#engineering)).
+   ([spec § Engineering](docs/spec.md#engineering), [craft § 5](docs/craft.md#5-behind-the-rules)).
 7. **Comments** do three jobs only: what a unit is, a gotcha the code cannot show, why something that
-   looks wrong is right.
+   looks wrong is right ([craft § 5](docs/craft.md#5-behind-the-rules)).
 
 ## Git & hygiene
 
@@ -72,3 +89,7 @@ may reach `dist/`. highlight.js, with every language it has, is the one runtime 
 - Open PRs as drafts unless asked otherwise. Never merge or approve your own PR without an explicit
   instruction to merge.
 - Squash merges only; the PR title becomes the commit subject.
+- **Alignment check**, by the author before a PR and on every push, and first thing by a reviewer:
+  CI checks the commands; nothing checks that a change follows this file and
+  [docs/craft.md](docs/craft.md). Read craft.md § The alignment check, then the diff: docs, comments
+  and tests first, since they pass CI whatever they say. Name each gap once.
