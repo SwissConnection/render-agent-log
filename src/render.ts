@@ -15,6 +15,9 @@ import { callArgument, type Output, type OutputLine, resultOutput, type Tone } f
 const previewLines = 3;
 const previewWidth = 200;
 const argumentWidth = 140;
+// A marker that shows as a blank column, for folded output and prose continued: the reset code keeps
+// the line from starting with whitespace, which the runner trims before it looks for `::`.
+const blank = "\x1b[0m ";
 
 interface Call {
   header: string;
@@ -325,23 +328,25 @@ export class Renderer {
     });
     const hidden =
       lines.filter(({ text }) => cleanLine(text).trim() !== "").length > preview.length;
-    if (hidden || cut) this.#fold(depth, lines);
+    if (hidden || cut) this.#fold(lines);
   }
 
-  #fold(depth: number, lines: OutputLine[]): void {
+  #fold(lines: OutputLine[]): void {
     const count = `… ${lines.length} line${lines.length === 1 ? "" : "s"}`;
-    this.#out.push(`::group::${this.#gutter(depth)}${gray(count)}`);
-    for (const { text, tone } of lines) this.#line(depth, gray("│"), foldedTone[tone](text));
+    // The log draws a group's triangle before its title and indents its lines by its own amount, so
+    // a subagent's gutter in either would not line up with the one outside: a fold goes without it.
+    this.#out.push(`::group::${gray(count)}`);
+    for (const { text, tone } of lines) this.#line(0, blank, foldedTone[tone](text));
     this.#out.push("::endgroup::");
   }
 
-  // The agent's text or thinking: `marker` on the first line, │ on the ones after.
+  // The agent's text or thinking: `marker` on the first line, indented under it on the ones after.
   #prose(chain: string[], marker: string, lines: string[]): void {
     const start = lines.findIndex((line) => line.trim() !== "");
     if (start === -1) return;
     this.#enter(chain);
     lines.slice(start).forEach((line, index) => {
-      this.#line(chain.length, index === 0 ? marker : gray("│"), line);
+      this.#line(chain.length, index === 0 ? marker : blank, line);
     });
   }
 
@@ -358,10 +363,7 @@ export class Renderer {
       lines.length > shown.length ||
       shown.some((line) => Array.from(line).length > previewWidth)
     ) {
-      this.#fold(
-        chain.length,
-        lines.map((line) => ({ text: line, tone: "plain" })),
-      );
+      this.#fold(lines.map((line) => ({ text: line, tone: "plain" })));
     }
   }
 
@@ -376,7 +378,7 @@ export class Renderer {
     return depth > 0 ? gray("│ ".repeat(depth)) : "";
   }
 
-  // `marker` is the line's first visible character: never whitespace, never untrusted.
+  // `marker` starts the line: never whitespace, never untrusted.
   #line(depth: number, marker: string, content = ""): void {
     this.#out.push(`${this.#gutter(depth)}${marker}${content === "" ? "" : ` ${content}`}`);
   }

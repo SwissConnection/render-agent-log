@@ -187,6 +187,7 @@ function diffOutput(result) {
 var previewLines = 3;
 var previewWidth = 200;
 var argumentWidth = 140;
+var blank = "\x1B[0m ";
 function unknownName(message) {
   const { type, subtype } = message;
   return subtype === void 0 ? String(type) : `${String(type)}/${String(subtype)}`;
@@ -458,21 +459,21 @@ var Renderer = class {
       this.#line(depth, gray(index === preview.length - 1 ? "\u2514" : "\u2502"), text);
     });
     const hidden = lines.filter(({ text }) => cleanLine(text).trim() !== "").length > preview.length;
-    if (hidden || cut) this.#fold(depth, lines);
+    if (hidden || cut) this.#fold(lines);
   }
-  #fold(depth, lines) {
+  #fold(lines) {
     const count = `\u2026 ${lines.length} line${lines.length === 1 ? "" : "s"}`;
-    this.#out.push(`::group::${this.#gutter(depth)}${gray(count)}`);
-    for (const { text, tone } of lines) this.#line(depth, gray("\u2502"), foldedTone[tone](text));
+    this.#out.push(`::group::${gray(count)}`);
+    for (const { text, tone } of lines) this.#line(0, blank, foldedTone[tone](text));
     this.#out.push("::endgroup::");
   }
-  // The agent's text or thinking: `marker` on the first line, │ on the ones after.
+  // The agent's text or thinking: `marker` on the first line, indented under it on the ones after.
   #prose(chain, marker, lines) {
     const start = lines.findIndex((line) => line.trim() !== "");
     if (start === -1) return;
     this.#enter(chain);
     lines.slice(start).forEach((line, index) => {
-      this.#line(chain.length, index === 0 ? marker : gray("\u2502"), line);
+      this.#line(chain.length, index === 0 ? marker : blank, line);
     });
   }
   // A user turn: the prompt of a subagent, or a message injected into the run.
@@ -485,10 +486,7 @@ var Renderer = class {
       this.#line(chain.length, gray(index === 0 ? "\u203A" : "\u2502"), gray(truncate(line, previewWidth)));
     });
     if (lines.length > shown.length || shown.some((line) => Array.from(line).length > previewWidth)) {
-      this.#fold(
-        chain.length,
-        lines.map((line) => ({ text: line, tone: "plain" }))
-      );
+      this.#fold(lines.map((line) => ({ text: line, tone: "plain" })));
     }
   }
   // A line of the renderer's own, colored whole. Parts of `text` may be untrusted, so all of it goes
@@ -500,7 +498,7 @@ var Renderer = class {
   #gutter(depth) {
     return depth > 0 ? gray("\u2502 ".repeat(depth)) : "";
   }
-  // `marker` is the line's first visible character: never whitespace, never untrusted.
+  // `marker` starts the line: never whitespace, never untrusted.
   #line(depth, marker, content = "") {
     this.#out.push(`${this.#gutter(depth)}${marker}${content === "" ? "" : ` ${content}`}`);
   }

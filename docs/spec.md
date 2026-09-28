@@ -42,15 +42,15 @@ dropped silently and never crashes the renderer.
 | Message | Rendering |
 |---|---|
 | `system/init` | gray `✻ <model> · <cwd>` line, for each `init` (a resumed session sends another) |
-| assistant `text` | `●` prose with a small Markdown subset turned into ANSI: bold, inline code (bold cyan), headings (bold), lists (markers kept), code fences (gray) |
-| assistant `thinking` | gray `✻` and gray italic text. Thinking without text (only a signature, the default) prints nothing |
+| assistant `text` | `●` prose with a small Markdown subset turned into ANSI: bold, inline code (bold cyan), headings (bold), lists (markers kept), code fences (gray). Lines after the first are indented under it |
+| assistant `thinking` | gray `✻` and gray italic text, indented like `text`. Thinking without text (only a signature, the default) prints nothing |
 | assistant `tool_use` | green `●` **Tool**(main argument, one line, ≤140 characters; a path under `cwd` relative to it) |
-| user `tool_result` | up to 3 preview lines that are not blank, the last under `└` and the ones above it under `│` (gray, red if `is_error`; not Claude Code's `⎿`, which falls back to a wider font in the log). Then, when the preview does not show all of it, the full output in `::group::… N lines` |
+| user `tool_result` | up to 3 preview lines that are not blank, the last under `└` and the ones above it under `│` (gray, red if `is_error`; not Claude Code's `⎿`, which falls back to a wider font in the log). Then, when the preview does not show all of it, the full output in `::group::… N lines`, indented |
 | Edit/Write result | colored diff from `tool_use_result.structuredPatch` (a new file: its content as added lines). The preview shows the changed lines |
 | Bash result | `stdout`, then `stderr` in yellow, from `tool_use_result`. On a failed call `tool_use_result` is a plain string, so it shows `content`, in red |
 | Agent result | `content`, which is an array of text blocks |
 | user text | gray `›` and the text, previewed and folded like tool output: a subagent's prompt, or a message injected into the run |
-| subagent messages (`parent_tool_use_id` set) | indented under the Agent call by a gray `│` per level |
+| subagent messages (`parent_tool_use_id` set) | indented under the Agent call by a gray `│` per level, except on a fold, title and lines: the log draws the group's triangle before its title and indents its lines by its own amount, so the `│` there would not line up with the ones outside |
 | `result` | `✻ <subtype> · N turns · Ns · $X` (green, or red on error with the `errors` under it). A line per `result`: a run with background subagents sends several. Turns and duration count per result, while `total_cost_usd` is the session's total so far |
 | `system/api_retry`, `compact_boundary`, `informational`, `notification`, `hook_response`, `local_command_output`, `model_refusal_*` | one line: yellow for a retry, a warning or a refusal fallback, red for a refusal or a failed hook, gray otherwise |
 | `active_goal` | gray `· goal: <condition> · N iterations · <last reason>`, or `· goal cleared` |
@@ -70,17 +70,21 @@ Rules:
    holds `##[` anywhere (`ActionCommand.TryParse`, the legacy syntax). Tool output, call arguments,
    agent text and paths are untrusted (changelogs, web pages), so:
    - Every line the renderer prints, except its own `::group::` and `::endgroup::`, starts with a
-     character the renderer owns that isn't whitespace (`●`, `✻`, `└`, `│`, `›`, `·`). That includes
-     the full output folded into a group, whose lines start with a gray `│`. Untrusted text is split
-     into lines where the runner splits them, and `\r` and the other control characters except `\t`
-     are removed.
+     character the renderer owns that isn't whitespace (`●`, `✻`, `└`, `│`, `›`, `·`), or with an
+     SGR reset (`\x1b[0m`) and a space: the indent of folded output and of prose after its first
+     line. ESC is not whitespace, so the runner's trim stops at it, and the log shows a plain indent.
+     This relies on the runner parsing the line with its escape codes in it (true of `actions/runner`
+     today, and not documented). If a runner update stripped them first, `hostile-output.jsonl` in
+     the visual check would show it at once, as annotations. Untrusted text is split into lines
+     where the runner splits them, and `\r` and the other control characters except `\t` are
+     removed.
    - Each `##[` in untrusted text gets an SGR code that changes nothing (underline off) between its
      two `#`: the log still shows `##[`, and the runner does not parse it.
 
    There is no `::stop-commands::` block: the runner prints its start and end lines itself, in every
    group, and a block left open would leave the rest of the step's commands inert, including the
-   action's own `::error::` in wrapper mode (#6). The cost is that output copied from the log carries
-   the `│` of each line.
+   action's own `::error::` in wrapper mode (#6). So every folded line needs its indent, and output
+   copied from a fold starts each line with two spaces.
 3. Only SGR escape sequences (colors) from tool output reach the log, and only in the folded full
    output: previews, call arguments and prose are plain text. Other escape sequences, their 8-bit C1
    forms included, are stripped.

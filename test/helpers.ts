@@ -37,7 +37,8 @@ export interface Command {
 }
 
 // The workflow commands the runner would run for `log`, by its rules (actions/runner,
-// ActionCommandManager.TryProcessCommand). Any command name counts, registered or not.
+// ActionCommandManager.TryProcessCommand). Any command name counts, registered or not. The runner
+// parses the line as written, escape codes included, and so does this.
 export function liveCommands(log: string): Command[] {
   const commands: Command[] = [];
   let stopToken: string | undefined;

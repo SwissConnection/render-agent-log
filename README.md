@@ -69,7 +69,9 @@ On a Linux runner, add one step before `claude-code-action` and pass its `wrappe
 ```
 
 The run now renders in the log of the `claude-code-action` step as it happens. Leave
-`show_full_output` off, or you get the JSON as well.
+`show_full_output` off, or you get the JSON as well. Even with it off, `claude-code-action` prints the
+run's result as JSON after the `✻` summary line; that comes from the action itself, and
+render-agent-log can't suppress it.
 
 Pin the Action to a release: `@v0` follows the latest `v0.x.y`, and a release's commit SHA fixes it.
 
@@ -168,12 +170,13 @@ shows the rest: parallel calls whose results come back out of order, thinking, a
 ## Safety
 
 **Workflow commands.** Every line render-agent-log prints starts with a character of its own (`●`,
-`│`, `└`, `✻`, `›`, `·`), and line breaks inside tool output, including a bare `\r`, become new
-lines that start the same way. So nothing a tool prints can reach the start of a log line, which is
-where GitHub looks for `::` commands. The older `##[…]` syntax, which GitHub also finds mid-line, is
-broken up with an invisible color code. That guards against output that happens to contain commands,
-not against the agent itself: an agent with a shell can write workflow commands into the log
-directly, with or without this Action.
+`│`, `└`, `✻`, `›`, `·`) or, where the log shows an indent, with an invisible color code, and line
+breaks inside tool output, including a bare `\r`, become new lines that start the same way. So
+nothing a tool prints can reach the start of a log line, which is where GitHub looks for `::`
+commands. The older `##[…]` syntax, which GitHub also finds mid-line, is broken up with an invisible
+color code. That guards against output that happens to contain commands, not against the agent
+itself: an agent with a shell can write workflow commands into the log directly, with or without
+this Action.
 
 **The wrapper and your token.** The wrapper runs in the step that holds the Claude token, so
 whatever `path_to_claude_code_executable` points at can read that token. Pass the `wrapper` output,
