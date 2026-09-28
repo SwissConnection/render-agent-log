@@ -101,13 +101,18 @@ describe.skipIf(process.platform !== "linux")("the wrapper", () => {
     expect(readdirSync(dir).sort()).toEqual(["claude", "copy.jsonl", "sdk.json", "stream.jsonl"]);
   }, 20_000);
 
-  test("lets the run complete when the renderer dies", async () => {
+  // Several runs: a renderer that exits at once raced the buffer's removal (#26), and lost it about
+  // one time in five.
+  test("lets the run complete when the renderer dies, and nothing else reaches the log", async () => {
     const dir = mkdtempSync(join(tmpdir(), "wrapper-dead-"));
     const stream = largeStream();
-    const { sdk, log } = runWrapper(stream, { renderer: script(dir, "node", "exit 1") });
-    expect(await sdk).toEqual({ stream, code: 0 });
-    expect(await log).toBe("::endgroup::\n");
-  }, 20_000);
+    const renderer = script(dir, "node", "exit 1");
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { sdk, log } = runWrapper(stream, { renderer });
+      expect(await sdk).toEqual({ stream, code: 0 });
+      expect(await log, `attempt ${attempt}`).toBe("::endgroup::\n");
+    }
+  }, 40_000);
 
   test("lets the run complete when the renderer hangs", async () => {
     const dir = mkdtempSync(join(tmpdir(), "wrapper-hung-"));
