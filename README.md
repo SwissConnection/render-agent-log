@@ -173,10 +173,10 @@ shows the rest: parallel calls whose results come back out of order, thinking, a
 `│`, `└`, `✻`, `›`, `·`) or, where the log shows an indent, with an invisible color code, and line
 breaks inside tool output, including a bare `\r`, become new lines that start the same way. So
 nothing a tool prints can reach the start of a log line, which is where GitHub looks for `::`
-commands. The older `##[…]` syntax, which GitHub also finds mid-line, is
-broken up with an invisible color code. That guards against output that happens to contain commands,
-not against the agent itself: an agent with a shell can write workflow commands into the log
-directly, with or without this Action.
+commands. The older `##[…]` syntax, which GitHub also finds mid-line, is broken up with an invisible
+color code. That guards against output that happens to contain commands, not against the agent
+itself: an agent with a shell can write workflow commands into the log directly, with or without
+this Action.
 
 **The wrapper and your token.** The wrapper runs in the step that holds the Claude token, so
 whatever `path_to_claude_code_executable` points at can read that token. Pass the `wrapper` output,
