@@ -1,5 +1,5 @@
-# Publishes a pushed vX.Y.Z tag as a GitHub release and moves the vX tag to it, so `uses: …@vX`
-# follows the latest release. No agent runs here.
+# Publishes a pushed vX.Y.Z tag as a GitHub release, unless it is one already, and moves the vX tag
+# to it, so `uses: …@vX` follows the latest release. No agent runs here.
 name: Release
 
 on:
@@ -35,7 +35,10 @@ jobs:
           GH_REPO: ${{ github.repository }}
           TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$TAG" --verify-tag --generate-notes --title "$TAG"
+          # Publishing a drafted release, as the web UI does, pushes the tag itself (#35).
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --verify-tag --generate-notes --title "$TAG"
+          fi
           major=${TAG%%.*}
           if gh api "repos/$GH_REPO/git/ref/tags/$major" >/dev/null 2>&1; then
             gh api -X PATCH "repos/$GH_REPO/git/refs/tags/$major" -f sha="$GITHUB_SHA" -F force=true
