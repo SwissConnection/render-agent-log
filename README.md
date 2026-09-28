@@ -7,7 +7,7 @@ It works live, while the agent runs, or on a finished run.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/demo-dark.png">
-  <img alt="A Claude Code run in the GitHub Actions log: a failing test, the files it read, the edit as a diff, the tests passing, and a summary line" src="docs/images/demo-light.png">
+  <img alt="A Claude Code run in the GitHub Actions log: a failing test, the files it read with one expanded and syntax-highlighted, the edit as a diff, the tests passing, and a summary line" src="docs/images/demo-light.png">
 </picture>
 
 That is Claude fixing a failing test in [`demo/`](demo/), inside `claude-code-action`. You can check
