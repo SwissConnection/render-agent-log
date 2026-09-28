@@ -44,8 +44,10 @@ only the ids, timestamps and tool output are made up. None of it may reach the l
 - A failed Bash call with the commands in stderr, and its string `tool_use_result`
 - A multi-line Bash `command` input whose second line is `::add-mask::…`, for the one-line call header
 - A Read whose numbered `content` hides the commands behind line numbers while
-  `tool_use_result.file.content` does not. The file is `NOTES.md`, so the renderer highlights it as
-  Markdown from `file.content`: the commands reach the highlighter as they are
+  `tool_use_result.file.content` does not. The file is `NOTES.md`, long enough to fold, so the
+  renderer highlights it as Markdown from `file.content` and the commands reach the highlighter as
+  they are: at the start of a line, in a heading, a code block, a list item and bold text, one
+  indented, and legacy `##[` ones
 - A subagent's WebFetch of a page with commands in it; the subagent's text repeats them, and the Agent
   hand-back repeats them indented by two spaces, which still counts as the start of a line
 - The agent's final text, on the top level, with a command and a legacy one on indented continuation

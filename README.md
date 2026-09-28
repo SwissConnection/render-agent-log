@@ -143,8 +143,7 @@ shows the changed lines, and the fold holds the whole diff.
 **Syntax highlighting.** In the fold, a file that Claude reads or writes is highlighted by its
 name, in any of the [190-odd languages](https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md)
 highlight.js knows. A diff keeps its changed lines red and green whole and highlights the code
-around them. Output that Claude prints with `cat` is not a file read, so it
-stays plain.
+around them. Output that Claude prints with `cat` is not a file read, so it stays plain.
 ([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36419296891/job/108917882109#step:4:336))
 
 <picture>

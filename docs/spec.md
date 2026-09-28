@@ -111,9 +111,9 @@ Rules:
    than none. The language comes from `filePath` in `tool_use_result` (Read, Edit, Write): by a few
    whole names (`Dockerfile`, `.bashrc`), else by extension, among the names and aliases of every
    language highlight.js has. An extension that several common languages use (`.m`, `.v`, `.cls`)
-   stays plain; `src/highlight.ts` lists these. Highlighting is
-   only in the fold: previews stay plain (rule 3), and a file's own escape codes are removed before
-   it is highlighted. The token classes and their colors, all from rule 7:
+   stays plain; `src/highlight.ts` lists these. Highlighting is only in the fold: previews stay
+   plain (rule 3), and a file's own escape codes are removed before it is highlighted. The token
+   classes and their colors, all from rule 7:
 
    | Class (highlight.js scope) | Style |
    |---|---|
