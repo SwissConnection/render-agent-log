@@ -70,5 +70,6 @@ CLI's task-output directory with `/tmp/claude-1001/-home-runner-work-demo-demo`,
 for `/Users/`, `/private/`, the user name and the host name. This repository is public: no local paths,
 host names, connection strings, tokens or private repository content.
 
-`claude-code-action`'s `execution_file` holds the same messages as one JSON array; a real one is
-added with the Action's execution-file mode (#7).
+`claude-code-action`'s `execution_file` holds the same messages as one JSON array.
+`execution-file.json` is one, byte for byte: `demo.yml` uploads each run's as the `execution-file`
+artifact.

@@ -141,9 +141,7 @@ function readOutput(result: Json): Output | undefined {
 }
 
 // Edit and Write results: the hunks of `structuredPatch`, or a new file's content as added lines.
-// The preview shows the changed lines rather than the context around them. In a language this build
-// highlights, a hunk's context is highlighted while its changed lines stay red and green whole, so
-// they stand out; a new file, with nothing to stand out from, is highlighted after a green `+`.
+// The preview shows the changed lines, not the context around them.
 function diffOutput(result: Json): Output | undefined {
   const patches = result.structuredPatch;
   if (!Array.isArray(patches) || !patches.every(isPatch)) return undefined;
@@ -154,12 +152,13 @@ function diffOutput(result: Json): Output | undefined {
     if (write.type !== "create" || typeof write.content !== "string") return undefined;
     const code = cleanLines(write.content, language === undefined);
     const styled = language === undefined ? [] : highlight(code, language);
+    // A new file has nothing for its lines to stand out from, so it is highlighted, after the `+`.
     code.forEach((line, index) => {
-      const code = styled[index];
+      const styledLine = styled[index];
       lines.push({
         text: `+${line}`,
         tone: "added",
-        ...(code !== undefined && { styled: `${green("+")}${code}` }),
+        ...(styledLine !== undefined && { styled: `${green("+")}${styledLine}` }),
       });
     });
   }
@@ -176,8 +175,9 @@ function diffOutput(result: Json): Output | undefined {
 
 const markerTone: Record<string, Tone> = { "+": "added", "-": "removed" };
 
-// A hunk's lines, with its context highlighted as part of the new code around it: the context and
-// the added lines, highlighted together so that a token spanning them (a block comment) is right.
+// A hunk's lines. Its context is highlighted and its changed lines stay red and green whole, so they
+// stand out. The context and the added lines are highlighted together, as the new code they are, so
+// that a token spanning them (a block comment) is right.
 function hunkLines(patchLines: string[], language: string | undefined): OutputLine[] {
   const lines = patchLines.map((line): OutputLine => {
     const text = cleanLine(line, language === undefined);
