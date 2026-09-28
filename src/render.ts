@@ -328,14 +328,14 @@ export class Renderer {
     });
     const hidden =
       lines.filter(({ text }) => cleanLine(text).trim() !== "").length > preview.length;
-    if (hidden || cut) this.#fold(depth, lines);
+    if (hidden || cut) this.#fold(lines);
   }
 
-  #fold(depth: number, lines: OutputLine[]): void {
+  #fold(lines: OutputLine[]): void {
     const count = `… ${lines.length} line${lines.length === 1 ? "" : "s"}`;
-    this.#out.push(`::group::${this.#gutter(depth)}${gray(count)}`);
-    // The log indents a group's lines by its own amount, so a subagent's gutter in there would not
-    // line up with the one outside: folded lines go without it.
+    // The log draws a group's triangle before its title and indents its lines by its own amount, so
+    // a subagent's gutter in either would not line up with the one outside: a fold goes without it.
+    this.#out.push(`::group::${gray(count)}`);
     for (const { text, tone } of lines) this.#line(0, blank, foldedTone[tone](text));
     this.#out.push("::endgroup::");
   }
@@ -363,10 +363,7 @@ export class Renderer {
       lines.length > shown.length ||
       shown.some((line) => Array.from(line).length > previewWidth)
     ) {
-      this.#fold(
-        chain.length,
-        lines.map((line) => ({ text: line, tone: "plain" })),
-      );
+      this.#fold(lines.map((line) => ({ text: line, tone: "plain" })));
     }
   }
 

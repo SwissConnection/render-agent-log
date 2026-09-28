@@ -459,11 +459,11 @@ var Renderer = class {
       this.#line(depth, gray(index === preview.length - 1 ? "\u2514" : "\u2502"), text);
     });
     const hidden = lines.filter(({ text }) => cleanLine(text).trim() !== "").length > preview.length;
-    if (hidden || cut) this.#fold(depth, lines);
+    if (hidden || cut) this.#fold(lines);
   }
-  #fold(depth, lines) {
+  #fold(lines) {
     const count = `\u2026 ${lines.length} line${lines.length === 1 ? "" : "s"}`;
-    this.#out.push(`::group::${this.#gutter(depth)}${gray(count)}`);
+    this.#out.push(`::group::${gray(count)}`);
     for (const { text, tone } of lines) this.#line(0, blank, foldedTone[tone](text));
     this.#out.push("::endgroup::");
   }
@@ -486,10 +486,7 @@ var Renderer = class {
       this.#line(chain.length, gray(index === 0 ? "\u203A" : "\u2502"), gray(truncate(line, previewWidth)));
     });
     if (lines.length > shown.length || shown.some((line) => Array.from(line).length > previewWidth)) {
-      this.#fold(
-        chain.length,
-        lines.map((line) => ({ text: line, tone: "plain" }))
-      );
+      this.#fold(lines.map((line) => ({ text: line, tone: "plain" })));
     }
   }
   // A line of the renderer's own, colored whole. Parts of `text` may be untrusted, so all of it goes

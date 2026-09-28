@@ -76,7 +76,7 @@
 [38;5;244m│ [0m[38;5;244m│[0m [38;5;244mRelease 3.0.0[0m
 [38;5;244m│ [0m[38;5;244m│[0m [38;5;244m::error::from a web page[0m
 [38;5;244m│ [0m[38;5;244m└[0m [38;5;244m::add-mask::web-mask-value[0m
-::group::[38;5;244m│ [0m[38;5;244m… 5 lines[0m
+::group::[38;5;244m… 5 lines[0m
 [0m  Release 3.0.0
 [0m  ::error::from a web page
 [0m  ::add-mask::web-mask-value
