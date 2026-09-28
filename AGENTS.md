@@ -45,7 +45,7 @@ Node 24 (the Action's runtime), npm. `npm ci` after `git worktree add`.
 | `npm run lint` | Biome: lint, format and import order, read-only |
 | `npm run fix` | Biome: apply the safe fixes and format |
 | `npm test` | Vitest, once |
-| `npm run build` | esbuild bundles the CLI (`src/index.ts`) and the Action (`src/action.ts`) to `dist/` |
+| `npm run build` | esbuild bundles the CLI (`src/index.ts`) and the Action (`src/action.ts`) to `dist/`, sharing `dist/chunk.js` |
 
 `node src/index.ts fixtures/claude/<name>.jsonl` renders a fixture in the terminal. The golden files
 in `test/golden/` hold each fixture's rendering; `npx vitest run -u` rewrites them, so read the diff.
@@ -58,7 +58,8 @@ A release is a pushed `vX.Y.Z` tag: `release.yml` publishes it and moves the `vX
 
 CI (`.github/workflows/ci.yml`) runs all but `fix`, and fails when `dist/` differs from a fresh build,
 so commit `dist/` with every source change. The SDK is imported with `import type` only; nothing of it
-may reach `dist/`. When an SDK bump fails the typecheck, a message type changed (rule 1).
+may reach `dist/`. highlight.js is the one runtime dependency: a language added to `src/highlight.ts`
+adds its grammar to `dist/`, so add the ones agents' files are commonly in, not every one it has. When an SDK bump fails the typecheck, a message type changed (rule 1).
 
 ## Rules
 

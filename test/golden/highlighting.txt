@@ -16,8 +16,7 @@
 ::endgroup::
 [32m●[0m [1mRead[22m(NOTES)
 [38;5;244m│[0m [38;5;244m1	Stock counts were last taken on Monday.[0m
-[38;5;244m│[0m [38;5;244m2	The basel warehouse closes in December.[0m
-[38;5;244m└[0m [38;5;244m3	[0m
+[38;5;244m└[0m [38;5;244m2	The basel warehouse closes in December.[0m
 [32m●[0m [1mRead[22m(config/settings.yaml)
 [38;5;244m│[0m [38;5;244m1	# Shop settings, read at start-up.[0m
 [38;5;244m│[0m [38;5;244m2	shop:[0m
@@ -155,8 +154,8 @@
 [0m       [35mdef[39m [33mreserve[39m(self, sku: [33mstr[39m, quantity: [33mint[39m) -> [33mbool[39m:
 [0m           [36m"""Take `quantity` units of `sku` if there are enough."""[39m
 [0m           available = [34mself[39m.stock.get(sku, [34m0[39m)
-[0m  [31m-[0m        [35mif[39m quantity >= available:
-[0m  [32m+[0m        [35mif[39m quantity > available:
+[0m  [31m-        if quantity >= available:[0m
+[0m  [32m+        if quantity > available:[0m
 [0m               [35mreturn[39m [34mFalse[39m
 [0m           [34mself[39m.stock[sku] = available - quantity
 [0m           [35mreturn[39m [34mTrue[39m
@@ -179,7 +178,7 @@
 [0m   [3;38;5;244m/*[23;39m
 [0m   [3;38;5;244m * Prices as the shop shows them.[23;39m
 [0m   [3;38;5;244m * Amounts are in cents, so no float ever holds money.[23;39m
-[0m  [32m+[0m[3;38;5;244m * Negative amounts are refunds.[23;39m
+[0m  [32m+ * Negative amounts are refunds.[0m
 [0m   [3;38;5;244m */[23;39m
 [0m   [35mexport[39m [35minterface[39m [33mPrice[39m {
 [0m     [34mcents[39m: [33mnumber[39m;
@@ -192,8 +191,8 @@
 [0m     [34mcurrency:[39m [36mCHF[39m
 [0m     [34mopen:[39m [34mtrue[39m
 [0m   [34minventory:[39m
-[0m  [31m-[0m  [34mlow_stock:[39m [34m5[39m
-[0m  [32m+[0m  [34mlow_stock:[39m [34m3[39m
+[0m  [31m-  low_stock: 5[0m
+[0m  [32m+  low_stock: 3[0m
 [0m     [34mwarehouses:[39m [[36mzurich[39m, [36mbasel[39m]
 ::endgroup::
 [32m●[0m [1mWrite[22m(scripts/release.sh)

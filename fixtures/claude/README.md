@@ -8,6 +8,7 @@ hand-made stream of hostile tool output. The renderer's golden files and targete
 | `edit-and-bash.jsonl` | Two parallel Reads; `npm test` failing (`is_error`, red); an Edit with `structuredPatch`; two parallel Bash calls whose results arrive in reverse order (`fast done` before `slow done`); `node --help`, 451 lines of stdout; `task_started` / `task_notification` for a Bash call |
 | `subagent.jsonl` | One foreground Agent call: the subagent's prompt, its Grep and Glob calls and their results carry `parent_tool_use_id`, then the Agent's own result under the top-level call |
 | `subagents-background.jsonl` | Two parallel Agent calls that the CLI ran in the background: each call's result is only "Async agent launched", the two subagents' messages interleave, and the run emits three `system/init` + `result` pairs as the session resumes after each `task_notification`. Also two `thinking` blocks with empty text and only a signature, and `background_tasks_changed` / `task_updated` |
+| `highlighting.jsonl` | Syntax highlighting: seven parallel Reads of Markdown, YAML, shell, Python and TypeScript files and `NOTES`, which has no language; a failing test fixed by an Edit of Python; an Edit inside a TypeScript block comment; a Write that rewrites a YAML file (`type: "update"`, with `structuredPatch`) and one that creates a shell script; a Read with an offset (`startLine: 10`); a Bash call refused with `system/permission_denied` |
 | `thinking.jsonl` | Captured with `--thinking-display summarized`: a `thinking` block with text, a Read, the answer, and a run of `system/thinking_tokens` |
 | `max-turns.jsonl` | `--max-turns 2`: the final `result` is `error_max_turns` with `is_error: true` and `errors` |
 | `hostile-output.jsonl` | Hand-made (see below) |
@@ -43,7 +44,8 @@ only the ids, timestamps and tool output are made up. None of it may reach the l
 - A failed Bash call with the commands in stderr, and its string `tool_use_result`
 - A multi-line Bash `command` input whose second line is `::add-mask::…`, for the one-line call header
 - A Read whose numbered `content` hides the commands behind line numbers while
-  `tool_use_result.file.content` does not
+  `tool_use_result.file.content` does not. The file is `NOTES.md`, so the renderer highlights it as
+  Markdown from `file.content`: the commands reach the highlighter as they are
 - A subagent's WebFetch of a page with commands in it; the subagent's text repeats them, and the Agent
   hand-back repeats them indented by two spaces, which still counts as the start of a line
 - The agent's final text, on the top level, with a command and a legacy one on indented continuation
@@ -56,6 +58,10 @@ The real runs used Claude Code 2.1.282 with `--model sonnet --safe-mode --strict
 git repository holding `src/sum.js` (an off-by-one loop), `src/sum.test.js`, `src/greet.js` and a
 `package.json` whose test script is `node --test`. `--safe-mode` keeps personal skills, plugins, MCP
 servers and `CLAUDE.md` out of the stream.
+
+`highlighting.jsonl` ran in a scratch repository of its own, a small Python shop with a YAML config,
+shell scripts, a TypeScript file and a README, with `--allowedTools` limited to Read, Edit, Write and
+the test script, and a prompt that lists the steps above and asks for the Read tool rather than `cat`.
 
 Before committing a capture, replace the scratch directory with `/home/runner/work/demo/demo` and the
 CLI's task-output directory with `/tmp/claude-1001/-home-runner-work-demo-demo`, then search the file

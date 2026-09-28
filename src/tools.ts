@@ -3,8 +3,8 @@ import type {
   FileEditOutput,
   FileWriteOutput,
 } from "@anthropic-ai/claude-agent-sdk/sdk-tools";
-import { highlight, languageOf } from "./highlight.ts";
-import { gray, green, red } from "./style.ts";
+import { highlight, type Language, languageOf } from "./highlight.ts";
+import { gray, green } from "./style.ts";
 import { cleanLine, cleanLines, oneLine } from "./text.ts";
 
 // What a tool call and its result show. Tool inputs and `tool_use_result` are untyped at runtime
@@ -113,8 +113,8 @@ function isPatch(value: unknown): value is Patch {
   );
 }
 
-// A Read of a text file in a language this build highlights: its content, numbered from where the
-// read started, as the tool numbers it for the model.
+// A Read of a text file: its content, numbered from where the read started as the tool numbers it
+// for the model, and highlighted when this build knows its language.
 function readOutput(result: Json): Output | undefined {
   const { file } = result;
   if (result.type !== "text" || !isObject(file)) return undefined;
@@ -122,16 +122,15 @@ function readOutput(result: Json): Output | undefined {
   if (typeof filePath !== "string" || typeof content !== "string" || typeof startLine !== "number")
     return undefined;
   const language = languageOf(filePath);
-  if (language === undefined) return undefined;
-  const code = cleanLines(content);
-  const styled = highlight(code, language);
+  const code = cleanLines(content, language === undefined);
+  const styled = language === undefined ? code : highlight(code, language);
   return {
     lines: code.map((text, index) => {
       const number = String(startLine + index);
       return {
         text: `${number}\t${text}`,
         tone: "plain",
-        styled: `${gray(number)}\t${styled[index]}`,
+        styled: `${gray(number)}\t${styled[index] ?? ""}`,
       };
     }),
   };
@@ -139,27 +138,24 @@ function readOutput(result: Json): Output | undefined {
 
 // Edit and Write results: the hunks of `structuredPatch`, or a new file's content as added lines.
 // The preview shows the changed lines rather than the context around them. In a language this build
-// highlights, the code is highlighted and only the `+` and `-` markers take the diff's colors; the
-// old and new side of each hunk are highlighted apart, since each is code on its own.
+// highlights, a hunk's context is highlighted while its changed lines stay red and green whole, so
+// they stand out; a new file, with nothing to stand out from, is highlighted after a green `+`.
 function diffOutput(result: Json): Output | undefined {
   const patches = result.structuredPatch;
   if (!Array.isArray(patches) || !patches.every(isPatch)) return undefined;
-  // SPIKE (#21): whole-line red and green, unhighlighted, to compare with in the visual check.
-  const language =
-    typeof result.filePath === "string" && process.env.RENDER_AGENT_LOG_SPIKE_DIFF !== "lines"
-      ? languageOf(result.filePath)
-      : undefined;
+  const language = typeof result.filePath === "string" ? languageOf(result.filePath) : undefined;
   const lines: OutputLine[] = [];
   if (patches.length === 0) {
     const write = result as Partial<FileWriteOutput>;
     if (write.type !== "create" || typeof write.content !== "string") return undefined;
     const code = cleanLines(write.content, language === undefined);
-    const styled = language === undefined ? undefined : highlight(code, language);
+    const styled = language === undefined ? [] : highlight(code, language);
     code.forEach((line, index) => {
+      const code = styled[index];
       lines.push({
         text: `+${line}`,
         tone: "added",
-        ...(styled && { styled: `${green("+")}${styled[index]}` }),
+        ...(code !== undefined && { styled: `${green("+")}${code}` }),
       });
     });
   }
@@ -175,31 +171,24 @@ function diffOutput(result: Json): Output | undefined {
 }
 
 const markerTone: Record<string, Tone> = { "+": "added", "-": "removed" };
-const markerStyle: Record<string, (text: string) => string> = { "+": green, "-": red };
 
-function hunkLines(patchLines: string[], language: ReturnType<typeof languageOf>): OutputLine[] {
-  const lines = patchLines.map((line) => cleanLine(line, language === undefined));
-  const tones = lines.map((text) => markerTone[text.charAt(0)] ?? "plain");
-  if (language === undefined)
-    return lines.map((text, index) => ({ text, tone: tones[index] ?? "plain" }));
-  // Each side: the indexes of its lines, and those lines highlighted, without their marker.
-  const side = (drop: string) => {
-    const indexes = lines.flatMap((line, index) =>
-      line.startsWith(drop) || line.startsWith("\\") ? [] : [index],
-    );
-    const styled = highlight(
-      indexes.map((index) => (lines[index] ?? "").slice(1)),
-      language,
-    );
-    return new Map(indexes.map((index, at) => [index, styled[at] ?? ""]));
-  };
-  const before = side("+");
-  const after = side("-");
-  return lines.map((text, index) => {
-    const marker = text.charAt(0);
-    const code = (marker === "-" ? before : after).get(index);
-    const tone = tones[index] ?? "plain";
-    if (code === undefined) return { text, tone };
-    return { text, tone, styled: `${(markerStyle[marker] ?? ((m: string) => m))(marker)}${code}` };
+// A hunk's lines, with its context highlighted as part of the new code around it: the context and
+// the added lines, highlighted together so that a token spanning them (a block comment) is right.
+function hunkLines(patchLines: string[], language: Language | undefined): OutputLine[] {
+  const lines = patchLines.map((line): OutputLine => {
+    const text = cleanLine(line, language === undefined);
+    return { text, tone: markerTone[text.charAt(0)] ?? "plain" };
+  });
+  if (language === undefined) return lines;
+  const after = lines.filter(({ text }) => !text.startsWith("-") && !text.startsWith("\\"));
+  const styled = highlight(
+    after.map(({ text }) => text.slice(1)),
+    language,
+  );
+  return lines.map((line) => {
+    const index = after.indexOf(line);
+    return line.tone === "plain" && index >= 0
+      ? { ...line, styled: `${line.text.charAt(0)}${styled[index] ?? ""}` }
+      : line;
   });
 }

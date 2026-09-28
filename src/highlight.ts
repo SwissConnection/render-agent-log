@@ -45,7 +45,7 @@ const languages = {
   xml,
   yaml,
 };
-type Language = keyof typeof languages;
+export type Language = keyof typeof languages;
 for (const [name, language] of Object.entries(languages)) hljs.registerLanguage(name, language);
 
 const byExtension: Record<string, Language> = {

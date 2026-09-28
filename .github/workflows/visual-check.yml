@@ -27,11 +27,6 @@ jobs:
         run: render-agent-log < fixtures/claude/edit-and-bash.jsonl
       - name: highlighting
         run: render-agent-log < fixtures/claude/highlighting.jsonl
-      # SPIKE (#21): the same run with whole-line red and green diffs, unhighlighted, to compare.
-      - name: highlighting, diffs in whole-line red and green
-        run: render-agent-log < fixtures/claude/highlighting.jsonl
-        env:
-          RENDER_AGENT_LOG_SPIKE_DIFF: lines
       - name: execution-file (demo run)
         uses: ./
         with:
