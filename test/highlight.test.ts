@@ -1,5 +1,6 @@
+import hljs from "highlight.js";
 import { describe, expect, test } from "vitest";
-import { highlight, type Language, languageOf } from "../src/highlight.ts";
+import { highlight } from "../src/highlight.ts";
 import { fixture } from "./helpers.ts";
 
 // Every file a fixture's Read or Write saw, plus text that trips a highlighter: HTML entities (the
@@ -24,37 +25,7 @@ files.push(
   ].join("\n"),
 );
 
-const languages = [
-  ...new Set(
-    [
-      "a.sh",
-      "a.c",
-      "a.cpp",
-      "a.cs",
-      "a.css",
-      "a.elm",
-      "a.kt",
-      "a.php",
-      "a.swift",
-      "a.diff",
-      "Dockerfile",
-      "a.go",
-      "a.toml",
-      "a.java",
-      "a.js",
-      "a.json",
-      "Makefile",
-      "a.md",
-      "a.py",
-      "a.rb",
-      "a.rs",
-      "a.sql",
-      "a.ts",
-      "a.html",
-      "a.yaml",
-    ].map((path) => languageOf(path) as Language),
-  ),
-];
+const languages = hljs.listLanguages();
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: the escape codes are what is checked
 const sgrCodes = /\x1b\[([0-9;]*)m/g;

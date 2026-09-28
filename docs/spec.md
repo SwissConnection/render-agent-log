@@ -108,8 +108,10 @@ Rules:
    the dark theme's text color (GitHub's Primer palette).
    Tool output keeps its own colors (rule 3).
 8. **File content is highlighted by the file's path, never by its content**: a wrong guess is worse
-   than none. The language comes from `filePath` in `tool_use_result` (Read, Edit, Write), by
-   extension or by name (`Dockerfile`, `Makefile`); `src/highlight.ts` lists them. Highlighting is
+   than none. The language comes from `filePath` in `tool_use_result` (Read, Edit, Write): by a few
+   whole names (`Dockerfile`, `.bashrc`), else by extension, among the names and aliases of every
+   language highlight.js has. An extension that several common languages use (`.m`, `.v`, `.cls`)
+   stays plain; `src/highlight.ts` lists these. Highlighting is
    only in the fold: previews stay plain (rule 3), and a file's own escape codes are removed before
    it is highlighted. The token classes and their colors, all from rule 7:
 
@@ -133,7 +135,7 @@ Rules:
 
 One TypeScript package, bundled with esbuild to `dist/`, which is committed. The CLI and the Action
 share one chunk, `dist/chunk.js`, which holds the renderer and highlight.js (BSD-3-Clause, see
-[NOTICE](../NOTICE)), its core and the languages `src/highlight.ts` registers.
+[NOTICE](../NOTICE)) with all its languages.
 
 The Action, `SwissConnection/render-agent-log@v0`, runs on `node24`, so no runner needs an install
 step. Its modes:

@@ -1,123 +1,50 @@
-import hljs from "highlight.js/lib/core";
-import bash from "highlight.js/lib/languages/bash";
-import c from "highlight.js/lib/languages/c";
-import cpp from "highlight.js/lib/languages/cpp";
-import csharp from "highlight.js/lib/languages/csharp";
-import css from "highlight.js/lib/languages/css";
-import diff from "highlight.js/lib/languages/diff";
-import dockerfile from "highlight.js/lib/languages/dockerfile";
-import elm from "highlight.js/lib/languages/elm";
-import go from "highlight.js/lib/languages/go";
-import ini from "highlight.js/lib/languages/ini";
-import java from "highlight.js/lib/languages/java";
-import javascript from "highlight.js/lib/languages/javascript";
-import json from "highlight.js/lib/languages/json";
-import kotlin from "highlight.js/lib/languages/kotlin";
-import makefile from "highlight.js/lib/languages/makefile";
-import markdown from "highlight.js/lib/languages/markdown";
-import php from "highlight.js/lib/languages/php";
-import python from "highlight.js/lib/languages/python";
-import ruby from "highlight.js/lib/languages/ruby";
-import rust from "highlight.js/lib/languages/rust";
-import sql from "highlight.js/lib/languages/sql";
-import swift from "highlight.js/lib/languages/swift";
-import typescript from "highlight.js/lib/languages/typescript";
-import xml from "highlight.js/lib/languages/xml";
-import yaml from "highlight.js/lib/languages/yaml";
+import hljs from "highlight.js";
 
 // Syntax highlighting for file content in folded output: the language comes from the file's path,
-// never from its content, and each token class gets one of the named colors (spec, output rule 7).
+// never from its content, and each token class gets one of the named colors (spec, output rule 8).
+// Every language highlight.js has is registered; a file's extension finds its language among their
+// names and aliases.
 
-const languages = {
-  bash,
-  c,
-  cpp,
-  csharp,
-  css,
-  diff,
-  dockerfile,
-  elm,
-  go,
-  ini,
-  java,
-  javascript,
-  json,
-  kotlin,
-  makefile,
-  markdown,
-  php,
-  python,
-  ruby,
-  rust,
-  sql,
-  swift,
-  typescript,
-  xml,
-  yaml,
-};
-export type Language = keyof typeof languages;
-for (const [name, language] of Object.entries(languages)) hljs.registerLanguage(name, language);
-
-const byExtension: Record<string, Language> = {
-  sh: "bash",
-  bash: "bash",
-  zsh: "bash",
-  c: "c",
-  h: "c",
-  cc: "cpp",
-  cpp: "cpp",
-  cxx: "cpp",
-  hpp: "cpp",
-  css: "css",
-  diff: "diff",
-  patch: "diff",
-  go: "go",
-  ini: "ini",
-  toml: "ini",
+// Extensions that are no alias of the language they are usually in.
+const byExtension: Record<string, string> = {
   cfg: "ini",
-  cs: "csharp",
+  cljc: "clojure",
+  cljs: "clojure",
   csx: "csharp",
-  elm: "elm",
-  kt: "kotlin",
-  kts: "kotlin",
-  php: "php",
-  swift: "swift",
-  java: "java",
-  js: "javascript",
-  mjs: "javascript",
-  cjs: "javascript",
-  jsx: "javascript",
-  json: "json",
-  jsonc: "json",
-  md: "markdown",
-  py: "python",
-  rb: "ruby",
-  rs: "rust",
-  sql: "sql",
-  ts: "typescript",
-  mts: "typescript",
-  cts: "typescript",
-  tsx: "typescript",
-  html: "xml",
+  hrl: "erlang",
   htm: "xml",
-  xml: "xml",
-  svg: "xml",
-  yml: "yaml",
-  yaml: "yaml",
+  psm1: "powershell",
+  rake: "ruby",
 };
-const byName: Record<string, Language> = {
+// Aliases that are extensions of more than one language, where a guess would often be wrong:
+// Objective-C and MATLAB (highlight.js has `m` as Mercury), Coq and Verilog, Apex, VBA and LaTeX
+// classes (`cos`), ASCII-armored keys (`angelscript`), LassoScript and LiveScript.
+const ambiguous = new Set(["m", "v", "cls", "asc", "ls"]);
+// Files known by their whole name.
+const byName: Record<string, string> = {
+  ".bash_profile": "bash",
+  ".bashrc": "bash",
+  ".profile": "bash",
+  ".zshrc": "bash",
+  "CMakeLists.txt": "cmake",
   Dockerfile: "dockerfile",
-  Makefile: "makefile",
+  Gemfile: "ruby",
   GNUmakefile: "makefile",
+  Jenkinsfile: "groovy",
+  Makefile: "makefile",
+  Rakefile: "ruby",
 };
 
 // The language of a file, from its name, or undefined for one this build does not highlight.
-export function languageOf(path: string): Language | undefined {
+export function languageOf(path: string): string | undefined {
   const name = path.slice(path.lastIndexOf("/") + 1);
   const known = byName[name];
   if (known !== undefined) return known;
   const dot = name.lastIndexOf(".");
-  return dot > 0 ? byExtension[name.slice(dot + 1).toLowerCase()] : undefined;
+  if (dot <= 0) return undefined;
+  const extension = name.slice(dot + 1).toLowerCase();
+  if (ambiguous.has(extension)) return undefined;
+  return byExtension[extension] ?? (hljs.getLanguage(extension) ? extension : undefined);
 }
 
 interface Style {
@@ -202,7 +129,7 @@ const entities: Record<string, string> = {
 
 // Cleaned lines of one file, highlighted as a whole so a token may span lines (a block comment, a
 // template string), and returned as as many lines, each ending with its styles off.
-export function highlight(lines: string[], language: Language): string[] {
+export function highlight(lines: string[], language: string): string[] {
   const html = hljs.highlight(lines.join("\n"), { language, ignoreIllegals: true }).value;
   const out: string[] = [];
   const stack: Style[] = [{}];

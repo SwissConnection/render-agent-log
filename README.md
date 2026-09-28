@@ -141,9 +141,9 @@ shows the changed lines, and the fold holds the whole diff.
 <img alt="An Edit call with its changed lines, and the expanded fold holding the full diff" src="docs/images/fold-diff.png" width="640">
 
 **Syntax highlighting.** In the fold, a file that Claude reads or writes is highlighted by its
-name: TypeScript, JavaScript, Python, shell, Go, Rust, Java, Kotlin, Swift, C, C++, C#, PHP, Ruby,
-Elm, SQL, CSS, HTML, JSON, YAML, TOML, Markdown, Dockerfiles and Makefiles. A diff keeps its changed lines red and green whole
-and highlights the code around them. Output that Claude prints with `cat` is not a file read, so it
+name, in any of the [190-odd languages](https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md)
+highlight.js knows. A diff keeps its changed lines red and green whole and highlights the code
+around them. Output that Claude prints with `cat` is not a file read, so it
 stays plain.
 ([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36419296891/job/108917882109#step:4:336))
 

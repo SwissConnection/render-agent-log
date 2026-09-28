@@ -3,7 +3,7 @@ import type {
   FileEditOutput,
   FileWriteOutput,
 } from "@anthropic-ai/claude-agent-sdk/sdk-tools";
-import { highlight, type Language, languageOf } from "./highlight.ts";
+import { highlight, languageOf } from "./highlight.ts";
 import { gray, green } from "./style.ts";
 import { cleanLine, cleanLines, oneLine } from "./text.ts";
 
@@ -178,7 +178,7 @@ const markerTone: Record<string, Tone> = { "+": "added", "-": "removed" };
 
 // A hunk's lines, with its context highlighted as part of the new code around it: the context and
 // the added lines, highlighted together so that a token spanning them (a block comment) is right.
-function hunkLines(patchLines: string[], language: Language | undefined): OutputLine[] {
+function hunkLines(patchLines: string[], language: string | undefined): OutputLine[] {
   const lines = patchLines.map((line): OutputLine => {
     const text = cleanLine(line, language === undefined);
     return { text, tone: markerTone[text.charAt(0)] ?? "plain" };

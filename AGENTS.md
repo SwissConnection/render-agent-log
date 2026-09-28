@@ -58,8 +58,8 @@ A release is a pushed `vX.Y.Z` tag: `release.yml` publishes it and moves the `vX
 
 CI (`.github/workflows/ci.yml`) runs all but `fix`, and fails when `dist/` differs from a fresh build,
 so commit `dist/` with every source change. The SDK is imported with `import type` only; nothing of it
-may reach `dist/`. highlight.js is the one runtime dependency: a language added to `src/highlight.ts`
-adds its grammar to `dist/`, so add the ones agents' files are commonly in, not every one it has. When an SDK bump fails the typecheck, a message type changed (rule 1).
+may reach `dist/`. highlight.js, with every language it has, is the one runtime dependency and most of
+`dist/`. When an SDK bump fails the typecheck, a message type changed (rule 1).
 
 ## Rules
 
