@@ -54,16 +54,16 @@ tee=$!
 
 # tail stops once tee is gone, and only then: tee is claude's child after the exec below, so it stays a
 # zombie until claude exits, and it writes the stream's last lines after claude's.
+# A pipeline, not a process substitution, so that the block waits for tail as well as the renderer:
+# the buffer is removed only once tail is done with it. Removed as soon as the renderer exited, it
+# could be gone before tail had opened it, and tail's complaint would land in the log (#26). tail
+# outlives a dead renderer until tee is gone, so the copy below sees the whole stream.
 # A renderer that exits non-zero, SIGKILL included, may leave a group open, which would fold the rest
 # of the step's log into it, the action's own ::error:: included.
 {
   set +e
-  "${RENDER_AGENT_LOG_NODE:-node}" "$root/dist/index.js" < <(tail -f -n +1 --pid="$tee" -- "$buffer") ||
-    printf '::endgroup::\n'
-  # $! is that tail. It runs until tee is gone, whether or not the renderer still reads, so waiting
-  # for it keeps the buffer until the stream has ended: removed as soon as the renderer exits, the
-  # buffer could be gone before tail had opened it, and tail's complaint would land in the log (#26).
-  wait $!
+  tail -f -n +1 --pid="$tee" -- "$buffer" | "${RENDER_AGENT_LOG_NODE:-node}" "$root/dist/index.js"
+  if [[ ${PIPESTATUS[1]} -ne 0 ]]; then printf '::endgroup::\n'; fi
   if [[ -n ${RENDER_AGENT_LOG_STREAM_COPY:-} ]]; then
     cat -- "$buffer" >>"$RENDER_AGENT_LOG_STREAM_COPY"
   fi
