@@ -57,7 +57,8 @@ The wrapper (`wrapper/claude-wrapper`) reaches the log through `/proc`, so its t
 On macOS, run them in a container: copy the tree without `node_modules` into `node:24-bookworm`, then
 `npm ci && npx vitest run test/wrapper.test.ts`.
 
-A release is a pushed `vX.Y.Z` tag: `release.yml` publishes it and moves the `vX` tag to it.
+A release is a pushed `vX.Y.Z` tag, or a drafted release published under a new one: `release.yml`
+publishes it unless it is already, and moves the `vX` tag to it.
 
 CI (`.github/workflows/ci.yml`) runs all but `fix`, and fails when `dist/` differs from a fresh build,
 so commit `dist/` with every source change. The SDK is imported with `import type` only; nothing of it
