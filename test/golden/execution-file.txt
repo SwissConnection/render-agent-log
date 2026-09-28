@@ -100,8 +100,8 @@
 [0m  [31m-const coupons = { SAVE10: 10, SAVE25: 25 };[0m
 [0m  [32m+const coupons = { SAVE10: 0.1, SAVE25: 0.25 };[0m
 [0m   
-[0m   // The discount a coupon code gives, as a fraction of the subtotal.
-[0m   export function discountFor(code) {
+[0m   [3;38;5;244m// The discount a coupon code gives, as a fraction of the subtotal.[23;39m
+[0m   [35mexport[39m [35mfunction[39m [33mdiscountFor[39m(code) {
 ::endgroup::
 [32m●[0m [1mBash[22m(npm test --silent 2>&1 | tail -30)
 [38;5;244m│[0m [38;5;244m✔ no coupon (0.921586ms)[0m

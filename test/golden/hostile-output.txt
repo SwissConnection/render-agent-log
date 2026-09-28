@@ -61,14 +61,24 @@
 [0m  done
 ::endgroup::
 [32m●[0m [1mRead[22m(NOTES.md)
-[38;5;244m│[0m [38;5;244m1	::error::from a file[0m
-[38;5;244m│[0m [38;5;244m2	::add-mask::file-mask-value[0m
-[38;5;244m└[0m [38;5;244m3	::endgroup::[0m
-::group::[38;5;244m… 4 lines[0m
-[0m  1	::error::from a file
-[0m  2	::add-mask::file-mask-value
-[0m  3	::endgroup::
-[0m  4	
+[38;5;244m│[0m [38;5;244m 1  ::error::from a file[0m
+[38;5;244m│[0m [38;5;244m 2  ::add-mask::file-mask-value[0m
+[38;5;244m└[0m [38;5;244m 3  ::endgroup::[0m
+::group::[38;5;244m… 14 lines[0m
+[0m  [38;5;244m 1[0m  ::error::from a file
+[0m  [38;5;244m 2[0m  ::add-mask::file-mask-value
+[0m  [38;5;244m 3[0m  ::endgroup::
+[0m  [38;5;244m 4[0m
+[0m  [38;5;244m 5[0m  [1m## #[24m#[error]legacy in a heading[22m
+[0m  [38;5;244m 6[0m
+[0m  [38;5;244m 7[0m  [36m```[39m
+[0m  [38;5;244m 8[0m  [36m::error::in a code block[39m
+[0m  [38;5;244m 9[0m  [36m```[39m
+[0m  [38;5;244m10[0m
+[0m  [38;5;244m11[0m  [35m-[39m ::warning::in a list item
+[0m  [38;5;244m12[0m     ::add-mask::fold-mask-value
+[0m  [38;5;244m13[0m  [1m#[24m#[add-mask]fold-legacy-mask-value[22m
+[0m  [38;5;244m14[0m  [1m**::notice::**[22m in bold
 ::endgroup::
 [32m●[0m [1mAgent[22m(Summarize the upstream release page)
 [38;5;244m│ [0m[38;5;244m›[0m [38;5;244mFetch https://example.com/releases and summarize the latest release.[0m

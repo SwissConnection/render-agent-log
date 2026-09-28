@@ -25,6 +25,12 @@ jobs:
         uses: ./
       - name: edit-and-bash
         run: render-agent-log < fixtures/claude/edit-and-bash.jsonl
+      - name: highlighting
+        run: render-agent-log < fixtures/claude/highlighting.jsonl
+      - name: execution-file (demo run)
+        uses: ./
+        with:
+          execution-file: fixtures/claude/execution-file.json
       - name: subagent
         run: render-agent-log < fixtures/claude/subagent.jsonl
       - name: subagents-background
@@ -44,4 +50,4 @@ jobs:
           render-agent-log < fixtures/claude/hostile-output.jsonl
           echo "::add-mask::control-after"
           echo "control: control-after (prints *** when commands are live again after the renderer)"
-          echo "injected: hostile-mask-value, legacy-mask-value, web-mask-value (print in clear when the injected add-mask commands stayed inert)"
+          echo "injected: hostile-mask-value, legacy-mask-value, web-mask-value, fold-mask-value, fold-legacy-mask-value (print in clear when the injected add-mask commands stayed inert)"

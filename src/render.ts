@@ -336,7 +336,8 @@ export class Renderer {
     // The log draws a group's triangle before its title and indents its lines by its own amount, so
     // a subagent's gutter in either would not line up with the one outside: a fold goes without it.
     this.#out.push(`::group::${gray(count)}`);
-    for (const { text, tone } of lines) this.#line(0, blank, foldedTone[tone](text));
+    for (const { text, tone, styled } of lines)
+      this.#line(0, blank, styled ?? foldedTone[tone](text));
     this.#out.push("::endgroup::");
   }
 

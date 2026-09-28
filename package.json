@@ -10,7 +10,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "esbuild src/index.ts src/action.ts --bundle --platform=node --target=node24 --format=esm --outdir=dist",
+    "build": "rm -rf dist && esbuild src/index.ts src/action.ts --bundle --splitting --chunk-names=[name] --platform=node --target=node24 --format=esm --outdir=dist",
     "typecheck": "tsc",
     "lint": "biome check",
     "fix": "biome check --write",
@@ -23,5 +23,8 @@
     "esbuild": "0.28.2",
     "typescript": "7.0.2",
     "vitest": "5.0.2"
+  },
+  "dependencies": {
+    "highlight.js": "11.12.0"
   }
 }

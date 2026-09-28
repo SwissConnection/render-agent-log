@@ -46,7 +46,8 @@ dropped silently and never crashes the renderer.
 | assistant `thinking` | gray `✻` and gray italic text, indented like `text`. Thinking without text (only a signature, the default) prints nothing |
 | assistant `tool_use` | green `●` **Tool**(main argument, one line, ≤140 characters; a path under `cwd` relative to it) |
 | user `tool_result` | up to 3 preview lines that are not blank, the last under `└` and the ones above it under `│` (gray, red if `is_error`; not Claude Code's `⎿`, which falls back to a wider font in the log). Then, when the preview does not show all of it, the full output in `::group::… N lines`, indented |
-| Edit/Write result | colored diff from `tool_use_result.structuredPatch` (a new file: its content as added lines). The preview shows the changed lines |
+| Read result | a text file's `tool_use_result.file.content`, numbered from `startLine` and highlighted in a language rule 8 knows. The numbers are right-aligned and gray in the fold, followed by spaces rather than the tool's tab: the log's tab stops in a fold are offset by its indent. The preview skips blank lines. Other reads (images, PDFs, notebooks) show `content` |
+| Edit/Write result | colored diff from `tool_use_result.structuredPatch` (a new file: its content as added lines). The preview shows the changed lines. In a highlighted language, a hunk's context lines are highlighted and its changed lines stay red and green whole, so they stand out; a new file is highlighted after a green `+` |
 | Bash result | `stdout`, then `stderr` in yellow, from `tool_use_result`. On a failed call `tool_use_result` is a plain string, so it shows `content`, in red |
 | Agent result | `content`, which is an array of text blocks |
 | user text | gray `›` and the text, previewed and folded like tool output: a subagent's prompt, or a message injected into the run |
@@ -106,10 +107,35 @@ Rules:
    themes. Bright black (90) is `#393f46` on the light theme, nearly its text color, and white (37) is
    the dark theme's text color (GitHub's Primer palette).
    Tool output keeps its own colors (rule 3).
+8. **File content is highlighted by the file's path, never by its content**: a wrong guess is worse
+   than none. The language comes from `filePath` in `tool_use_result` (Read, Edit, Write): by a few
+   whole names (`Dockerfile`, `.bashrc`), else by extension, among the names and aliases of every
+   language highlight.js has. An extension that several common languages use (`.m`, `.v`, `.cls`)
+   stays plain; `src/highlight.ts` lists these. Highlighting is only in the fold: previews stay
+   plain (rule 3), and a file's own escape codes are removed before it is highlighted. The token
+   classes and their colors, all from rule 7:
+
+   | Class (highlight.js scope) | Style |
+   |---|---|
+   | comment, quote, doctag | gray italic |
+   | keyword, name (a tag's), bullet, template tag and variable | magenta |
+   | string, regexp, code (Markdown) | cyan |
+   | number, literal, symbol, variable, attr, attribute, property, meta, link | blue |
+   | title (function, class), type, built_in, CSS class and id | yellow |
+   | section (a heading), strong | bold |
+   | emphasis | italic |
+   | addition, deletion (a `.diff` file) | green, red |
+   | subst (`${…}` in a template string), operator, punctuation, params | default |
+
+   A file is highlighted as a whole, so a token may span lines, and each line ends with its styles
+   off. A hunk is highlighted from its first line, not from the file's start: a hunk that starts
+   inside a block comment or a string is highlighted wrong until that token ends.
 
 ## Packaging
 
-One TypeScript package, bundled with esbuild to `dist/`, which is committed.
+One TypeScript package, bundled with esbuild to `dist/`, which is committed. The CLI and the Action
+share one chunk, `dist/chunk.js`, which holds the renderer and highlight.js (BSD-3-Clause, see
+[NOTICE](../NOTICE)) with all its languages.
 
 The Action, `SwissConnection/render-agent-log@v0`, runs on `node24`, so no runner needs an install
 step. Its modes:
