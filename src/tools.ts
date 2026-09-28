@@ -3,6 +3,8 @@ import type {
   FileEditOutput,
   FileWriteOutput,
 } from "@anthropic-ai/claude-agent-sdk/sdk-tools";
+import { highlight, languageOf } from "./highlight.ts";
+import { gray, green, red } from "./style.ts";
 import { cleanLine, cleanLines, oneLine } from "./text.ts";
 
 // What a tool call and its result show. Tool inputs and `tool_use_result` are untyped at runtime
@@ -13,6 +15,8 @@ export type Tone = "plain" | "error" | "stderr" | "added" | "removed" | "hunk";
 export interface OutputLine {
   text: string;
   tone: Tone;
+  // The line as the fold shows it, when it is highlighted: `text` with the styles already in it.
+  styled?: string;
 }
 export interface Output {
   lines: OutputLine[];
@@ -78,6 +82,8 @@ export function resultOutput(content: unknown, isError: boolean, toolUseResult: 
     return { lines: toLines(contentText(content), isError ? "error" : "plain") };
   const diff = diffOutput(toolUseResult);
   if (diff) return diff;
+  const read = readOutput(toolUseResult);
+  if (read) return read;
   if (isBashOutput(toolUseResult) && (toolUseResult.stdout !== "" || toolUseResult.stderr !== "")) {
     return {
       lines: [
@@ -107,29 +113,93 @@ function isPatch(value: unknown): value is Patch {
   );
 }
 
+// A Read of a text file in a language this build highlights: its content, numbered from where the
+// read started, as the tool numbers it for the model.
+function readOutput(result: Json): Output | undefined {
+  const { file } = result;
+  if (result.type !== "text" || !isObject(file)) return undefined;
+  const { filePath, content, startLine } = file;
+  if (typeof filePath !== "string" || typeof content !== "string" || typeof startLine !== "number")
+    return undefined;
+  const language = languageOf(filePath);
+  if (language === undefined) return undefined;
+  const code = cleanLines(content);
+  const styled = highlight(code, language);
+  return {
+    lines: code.map((text, index) => {
+      const number = String(startLine + index);
+      return {
+        text: `${number}\t${text}`,
+        tone: "plain",
+        styled: `${gray(number)}\t${styled[index]}`,
+      };
+    }),
+  };
+}
+
 // Edit and Write results: the hunks of `structuredPatch`, or a new file's content as added lines.
-// The preview shows the changed lines rather than the context around them.
+// The preview shows the changed lines rather than the context around them. In a language this build
+// highlights, the code is highlighted and only the `+` and `-` markers take the diff's colors; the
+// old and new side of each hunk are highlighted apart, since each is code on its own.
 function diffOutput(result: Json): Output | undefined {
   const patches = result.structuredPatch;
   if (!Array.isArray(patches) || !patches.every(isPatch)) return undefined;
+  // SPIKE (#21): whole-line red and green, unhighlighted, to compare with in the visual check.
+  const language =
+    typeof result.filePath === "string" && process.env.RENDER_AGENT_LOG_SPIKE_DIFF !== "lines"
+      ? languageOf(result.filePath)
+      : undefined;
   const lines: OutputLine[] = [];
   if (patches.length === 0) {
     const write = result as Partial<FileWriteOutput>;
     if (write.type !== "create" || typeof write.content !== "string") return undefined;
-    for (const line of cleanLines(write.content, true))
-      lines.push({ text: `+${line}`, tone: "added" });
+    const code = cleanLines(write.content, language === undefined);
+    const styled = language === undefined ? undefined : highlight(code, language);
+    code.forEach((line, index) => {
+      lines.push({
+        text: `+${line}`,
+        tone: "added",
+        ...(styled && { styled: `${green("+")}${styled[index]}` }),
+      });
+    });
   }
   for (const patch of patches) {
     lines.push({
       text: `@@ -${patch.oldStart},${patch.oldLines} +${patch.newStart},${patch.newLines} @@`,
       tone: "hunk",
     });
-    for (const line of patch.lines) {
-      const text = cleanLine(line, true);
-      const tone = text.startsWith("+") ? "added" : text.startsWith("-") ? "removed" : "plain";
-      lines.push({ text, tone });
-    }
+    lines.push(...hunkLines(patch.lines, language));
   }
   const changed = lines.filter((line) => line.tone === "added" || line.tone === "removed");
   return changed.length === 0 ? undefined : { lines, preview: changed };
+}
+
+const markerTone: Record<string, Tone> = { "+": "added", "-": "removed" };
+const markerStyle: Record<string, (text: string) => string> = { "+": green, "-": red };
+
+function hunkLines(patchLines: string[], language: ReturnType<typeof languageOf>): OutputLine[] {
+  const lines = patchLines.map((line) => cleanLine(line, language === undefined));
+  const tones = lines.map((text) => markerTone[text.charAt(0)] ?? "plain");
+  if (language === undefined)
+    return lines.map((text, index) => ({ text, tone: tones[index] ?? "plain" }));
+  // Each side: the indexes of its lines, and those lines highlighted, without their marker.
+  const side = (drop: string) => {
+    const indexes = lines.flatMap((line, index) =>
+      line.startsWith(drop) || line.startsWith("\\") ? [] : [index],
+    );
+    const styled = highlight(
+      indexes.map((index) => (lines[index] ?? "").slice(1)),
+      language,
+    );
+    return new Map(indexes.map((index, at) => [index, styled[at] ?? ""]));
+  };
+  const before = side("+");
+  const after = side("-");
+  return lines.map((text, index) => {
+    const marker = text.charAt(0);
+    const code = (marker === "-" ? before : after).get(index);
+    const tone = tones[index] ?? "plain";
+    if (code === undefined) return { text, tone };
+    return { text, tone, styled: `${(markerStyle[marker] ?? ((m: string) => m))(marker)}${code}` };
+  });
 }

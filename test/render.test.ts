@@ -7,6 +7,7 @@ import { fixture, liveCommands, render, visibleLines } from "./helpers.ts";
 
 const fixtures = [
   "edit-and-bash",
+  "highlighting",
   "hostile-output",
   "max-turns",
   "subagent",

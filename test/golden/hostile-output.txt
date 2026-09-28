@@ -64,12 +64,6 @@
 [38;5;244m│[0m [38;5;244m1	::error::from a file[0m
 [38;5;244m│[0m [38;5;244m2	::add-mask::file-mask-value[0m
 [38;5;244m└[0m [38;5;244m3	::endgroup::[0m
-::group::[38;5;244m… 4 lines[0m
-[0m  1	::error::from a file
-[0m  2	::add-mask::file-mask-value
-[0m  3	::endgroup::
-[0m  4	
-::endgroup::
 [32m●[0m [1mAgent[22m(Summarize the upstream release page)
 [38;5;244m│ [0m[38;5;244m›[0m [38;5;244mFetch https://example.com/releases and summarize the latest release.[0m
 [38;5;244m│ [0m[32m●[0m [1mWebFetch[22m(https://example.com/releases)
