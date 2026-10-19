@@ -31,6 +31,16 @@ export function visibleLines(log: string): string[] {
   return lines;
 }
 
+// The lines GitHub's log viewer would draw as a marker (a fold, a red error line), by what the visual
+// check shows: it looks past SGR codes, and past a stray character around the second `#`, but not
+// into the name.
+export function viewerMarkers(log: string): string[] {
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: removes SGR codes
+  const plain = log.replace(/\x1b\[[0-9;:]*m/g, "");
+  const marker = /#[^\p{L}\p{N}]?#[^\p{L}\p{N}]?\[(group|endgroup|warning|error)\]/u;
+  return plain.split(/\r\n|\r|\n/).filter((line) => marker.test(line));
+}
+
 export interface Command {
   name: string;
   data: string;
