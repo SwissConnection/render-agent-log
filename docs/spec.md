@@ -80,7 +80,10 @@ Rules:
      where the runner splits them, and `\r` and the other control characters except `\t` are
      removed.
    - Each `##[` in untrusted text gets an SGR code that changes nothing (underline off) between its
-     two `#`: the log still shows `##[`, and the runner does not parse it.
+     two `#`, so the runner does not parse it, and a zero-width space after the `[`. GitHub's log
+     viewer looks past the SGR code and draws `##[group]`, `##[endgroup]`, `##[warning]` and
+     `##[error]` as folds and red or yellow lines wherever they sit, and the copied lines of an
+     Actions log hold all four. The log still shows `##[`.
 
    There is no `::stop-commands::` block: the runner prints its start and end lines itself, in every
    group, and a block left open would leave the rest of the step's commands inert, including the

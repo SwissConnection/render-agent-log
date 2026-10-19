@@ -42,6 +42,9 @@ only the ids, timestamps and tool output are made up. None of it may reach the l
 - In the same stdout, legacy `##[command]` syntax, which the runner parses anywhere in a line: one at
   the start of a line, one in the middle
 - A failed Bash call with the commands in stderr, and its string `tool_use_result`
+- A Bash call that reads a downloaded Actions log: timestamped `##[group]`, `##[endgroup]`,
+  `##[warning]` and `##[error]` lines, in the preview and in the fold, which GitHub's log viewer
+  draws as folds and errors unless the renderer breaks them
 - A multi-line Bash `command` input whose second line is `::add-mask::…`, for the one-line call header
 - A Read whose numbered `content` hides the commands behind line numbers while
   `tool_use_result.file.content` does not. The file is `NOTES.md`, long enough to fold, so the

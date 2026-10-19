@@ -52636,7 +52636,7 @@ function truncate(text, max) {
   return points.length <= max ? text : `${points.slice(0, max - 1).join("")}\u2026`;
 }
 function defuse(line) {
-  return line.replaceAll("##[", "#\x1B[24m#[");
+  return line.replaceAll("##[", "#\x1B[24m#[\u200B");
 }
 
 // node_modules/highlight.js/es/index.js

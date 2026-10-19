@@ -3,7 +3,7 @@ import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { describe, expect, test } from "vitest";
 import { Renderer } from "../src/render.ts";
 import { red } from "../src/style.ts";
-import { fixture, liveCommands, render, visibleLines } from "./helpers.ts";
+import { fixture, liveCommands, render, viewerMarkers, visibleLines } from "./helpers.ts";
 
 const fixtures = [
   "edit-and-bash",
@@ -111,6 +111,7 @@ describe("hostile output", () => {
       .split("\n")
       .map((line) => JSON.parse(line));
     expect(liveCommands(strings(messages).join("\n")).length).toBeGreaterThan(20);
+    expect(viewerMarkers(strings(messages).join("\n")).length).toBeGreaterThan(5);
   });
 
   test("renders to no live command but the renderer's own", async () => {
@@ -118,6 +119,10 @@ describe("hostile output", () => {
     const names = commands.map(({ name }) => name);
     expect(names.filter((name) => name !== "group" && name !== "endgroup")).toEqual([]);
     expect(names.join(" ")).toMatch(/^(group endgroup ?)+$/);
+  });
+
+  test("renders to no line GitHub's log viewer draws as a marker", async () => {
+    expect(viewerMarkers(await render(fixture("hostile-output")))).toEqual([]);
   });
 });
 
