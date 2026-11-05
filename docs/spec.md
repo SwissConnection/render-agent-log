@@ -148,8 +148,11 @@ step. Its modes:
 - Without inputs, it puts the CLI on `PATH` for live piping:
   `claude -p … --output-format stream-json --verbose | render-agent-log`.
 - The same step also sets the `wrapper` output, passed to `claude-code-action` as
-  `path_to_claude_code_executable`: a wrapper around `claude` that renders a copy of its stream into
-  the step's log, Linux only. How it does that and how it fails safe is in
+  `path_to_claude_code_executable`, or to another Agent SDK host as `cli_path`
+  (`pathToClaudeCodeExecutable`): a wrapper around `claude` that renders a copy of its stream into
+  the step's log, Linux only. It runs the `claude` that `claude-code-action` ships, or the one the
+  `claude` input names, which the Action sets for the job's later steps. How it does that and how it
+  fails safe is in
   [`wrapper/claude-wrapper`](../wrapper/claude-wrapper).
 
 The CLI is the Action's live mode, not a separate deliverable.

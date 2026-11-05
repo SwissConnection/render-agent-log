@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# The wrapper for claude-code-action, passed as path_to_claude_code_executable (the Action's wrapper
-# output). It runs the real claude on the SDK's own stdin, stdout and stderr, and copies claude's
-# stdout through the renderer into the step's log. Linux only: it reaches the log through /proc.
+# The wrapper for an Agent SDK host, the Action's wrapper output: claude-code-action's
+# path_to_claude_code_executable, or the SDK's cli_path. It runs the real claude on the SDK's own
+# stdin, stdout and stderr, and copies claude's stdout through the renderer into the step's log.
+# Linux only: it reaches the log through /proc.
 #
 # Gotchas:
 # - The action prepends this directory to PATH, for the agent's Bash tool and for every later step.
@@ -10,10 +11,17 @@
 #   --output-format stream-json, so everything else goes straight to the real claude.
 set -euo pipefail
 
-# The native claude the SDK bundles, which the action installs with it: the version always matches the
-# SDK's, so there is no separate install to pin and keep in step with the action.
-arch=$(uname -m | sed 's/x86_64/x64/; s/aarch64/arm64/')
-real=${RENDER_AGENT_LOG_CLAUDE:-${GITHUB_ACTION_PATH:-}/node_modules/@anthropic-ai/claude-agent-sdk-linux-$arch/claude}
+# The Action's claude input, else the native claude the SDK bundles, which claude-code-action installs
+# with it: the version always matches the SDK's, so there is no separate install to pin and keep in
+# step with the action.
+if [[ -n ${RENDER_AGENT_LOG_CLAUDE:-} ]]; then
+  real=$RENDER_AGENT_LOG_CLAUDE
+  where="which the claude input names (RENDER_AGENT_LOG_CLAUDE)."
+else
+  arch=$(uname -m | sed 's/x86_64/x64/; s/aarch64/arm64/')
+  real=${GITHUB_ACTION_PATH:-}/node_modules/@anthropic-ai/claude-agent-sdk-linux-$arch/claude
+  where="where claude-code-action ships it. Has the action moved it? Any other host names its own in the claude input."
+fi
 case " $* " in
   *" --output-format stream-json "*) ;;
   *) exec "$real" "$@" ;;
@@ -22,10 +30,11 @@ esac
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 own=$(readlink /proc/$$/fd/1 2>/dev/null || true)
 
-# The SDK spawns this script from the action's bun process, whose stdout is a pipe to the runner: the
-# step's log. Should a process ever sit between the SDK and this script, the parent's stdout is no
-# longer the log, and at worst it is the SDK's own stream, which rendered lines would corrupt. Then
-# the run goes unrendered, with a warning where the log most likely is: the grandparent's stdout.
+# The SDK spawns this script from the host's process (claude-code-action's bun), whose stdout is a pipe
+# to the runner: the step's log. Should a process ever sit between the SDK and this script, the
+# parent's stdout is no longer the log, and at worst it is the SDK's own stream, which rendered lines
+# would corrupt. Then the run goes unrendered, with a warning where the log most likely is: the
+# grandparent's stdout.
 log=/proc/$PPID/fd/1
 parent=$(readlink "$log" 2>/dev/null || true)
 if [[ $parent != pipe:* || $parent == "$own" ]]; then
@@ -39,8 +48,7 @@ if [[ $parent != pipe:* || $parent == "$own" ]]; then
 fi
 
 if [[ ! -x $real ]]; then
-  printf '::error::render-agent-log: no claude at %s. Has claude-code-action moved the SDK'\''s claude?\n' \
-    "$real" >"$log"
+  printf '::error::render-agent-log: no claude at %s, %s\n' "$real" "$where" >"$log"
   exit 127
 fi
 

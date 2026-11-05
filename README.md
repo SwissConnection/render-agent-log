@@ -88,7 +88,7 @@ one of three ways:
 
 | Mode | Where the stream comes from | Live | Runners |
 |---|---|---|---|
-| **Wrapper** | `claude-code-action`, through `path_to_claude_code_executable` | yes | Linux |
+| **Wrapper** | `claude-code-action` or another Agent SDK host, through the path it starts `claude` from | yes | Linux |
 | **CLI** | `claude -p … --output-format stream-json`, piped into `render-agent-log` | yes | any |
 | **Execution file** | `claude-code-action`'s `execution_file` output | after the run | any |
 
@@ -98,6 +98,22 @@ action unchanged, and writes a rendered copy into the step's log. To reach that 
 action it writes to the action process's standard output through `/proc`, which only Linux has. On
 macOS and Windows runners the `wrapper` output is empty, the Action prints a warning, and
 `claude-code-action` runs unrendered; use the CLI or the execution file there.
+
+Any other program built on the Agent SDK can use the wrapper the same way, as long as its standard
+output is the step's log, not piped or redirected. Pass the `wrapper` output as the SDK's
+`cli_path` (Python) or `pathToClaudeCodeExecutable` (TypeScript). The wrapper runs the `claude` that
+`claude-code-action` ships, so a host with its own names it in the `claude` input:
+
+```yaml
+- uses: SwissConnection/render-agent-log@v0
+  id: render
+  with:
+    claude: scripts/claude # your claude, or a script that runs it
+
+- env:
+    CLAUDE_CLI: ${{ steps.render.outputs.wrapper }} # your program's cli_path
+  run: python agent.py
+```
 
 **CLI.** If you run `claude -p` yourself, the stream is already on standard output. Pipe it through:
 
@@ -190,10 +206,11 @@ That guards against output that happens to contain commands, not against the age
 with a shell can write workflow commands into the log directly, with or without this Action.
 
 **The wrapper and your token.** The wrapper runs in the step that holds the Claude token, so
-whatever `path_to_claude_code_executable` points at can read that token. Pass the `wrapper` output,
-which points at this Action's own copy, fixed by the `uses:` ref. Never pass a path in your
-checked-out tree: in a workflow that checks out a pull request, that is code the pull request's
-author wrote. (Like any action's files, the Action's copy is only as safe as the job's earlier steps.)
+whatever `path_to_claude_code_executable` or `cli_path` points at can read that token, and so can the
+`claude` it runs. Pass the `wrapper` output, which points at this Action's own copy, fixed by the
+`uses:` ref. Never pass a path in your checked-out tree: in a workflow that checks out a pull
+request, that is code the pull request's author wrote. The same goes for a `claude` input in that
+tree. (Like any action's files, the Action's copy is only as safe as the job's earlier steps.)
 
 **Secrets.** The rendered log shows what `show_full_output: true` would show: tool calls, tool output
 and the agent's text. GitHub still masks each secret it knows, but only verbatim. A secret that a
@@ -213,7 +230,8 @@ closes the group, so the action's own `::error::` lines still become annotations
 |---|---|---|
 | `execution-file` | input | A finished run to render: `claude-code-action`'s `execution_file`, or a `stream-json` file. Without it, the Action sets up the live modes. |
 | `stream-copy` | input | Live modes only: a file the wrapper appends the raw `stream-json` to, for debugging. Off by default, since it copies every tool output to disk. |
-| `wrapper` | output | Live modes only, Linux only: the path to pass to `claude-code-action` as `path_to_claude_code_executable`. |
+| `claude` | input | Wrapper only: the `claude` the wrapper runs, in place of the one `claude-code-action` ships, for a host that starts its own through the Agent SDK. A relative path is from the workspace. Set for the job's later steps. |
+| `wrapper` | output | Live modes only, Linux only: the path to pass to `claude-code-action` as `path_to_claude_code_executable`, or to another Agent SDK host as `cli_path` (`pathToClaudeCodeExecutable`). |
 
 ---
 <br/>

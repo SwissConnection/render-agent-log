@@ -36,6 +36,8 @@ function live() {
 `);
   const copy = input("stream-copy");
   if (copy !== "") fileCommand("GITHUB_ENV", `RENDER_AGENT_LOG_STREAM_COPY=${resolve(copy)}`);
+  const claude = input("claude") && resolve(input("claude"));
+  if (claude !== "") fileCommand("GITHUB_ENV", `RENDER_AGENT_LOG_CLAUDE=${claude}`);
   if (process.platform !== "linux") {
     process.stdout.write(
       command(
@@ -47,7 +49,8 @@ function live() {
   }
   const wrapper = join(root, "wrapper", "claude-wrapper");
   fileCommand("GITHUB_OUTPUT", `wrapper=${wrapper}`);
-  process.stdout.write(`${gray(`\xB7 wrapper for claude-code-action at ${wrapper}`)}
+  const runs = claude === "" ? "" : `, running ${claude}`;
+  process.stdout.write(`${gray(`\xB7 wrapper at ${wrapper}${runs}`)}
 `);
 }
 var executionFile = input("execution-file");
