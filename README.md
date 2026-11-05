@@ -102,7 +102,9 @@ macOS and Windows runners the `wrapper` output is empty, the Action prints a war
 Any other program built on the Agent SDK can use the wrapper the same way, as long as its standard
 output is the step's log, not piped or redirected. Pass the `wrapper` output as the SDK's
 `cli_path` (Python) or `pathToClaudeCodeExecutable` (TypeScript). The wrapper runs the `claude` that
-`claude-code-action` ships, so a host with its own names it in the `claude` input:
+`claude-code-action` ships, so a host with its own names it in the `claude` input. The input holds
+for every later step of the job, so a `claude-code-action` step after it runs that `claude` too, and
+a later setup step without the input does not undo it:
 
 ```yaml
 - uses: SwissConnection/render-agent-log@v0
@@ -208,9 +210,11 @@ with a shell can write workflow commands into the log directly, with or without 
 **The wrapper and your token.** The wrapper runs in the step that holds the Claude token, so
 whatever `path_to_claude_code_executable` or `cli_path` points at can read that token, and so can the
 `claude` it runs. Pass the `wrapper` output, which points at this Action's own copy, fixed by the
-`uses:` ref. Never pass a path in your checked-out tree: in a workflow that checks out a pull
-request, that is code the pull request's author wrote. The same goes for a `claude` input in that
-tree. (Like any action's files, the Action's copy is only as safe as the job's earlier steps.)
+`uses:` ref. In a workflow that checks out a pull request, point neither of them nor the `claude`
+input into the checked-out tree: that is code the pull request's author wrote. The wrapper reads the
+`claude` input's file each time it runs, so a later step that checks out another ref puts that ref's
+file in its place. (Like any action's files, the Action's copy is only as safe as the job's earlier
+steps.)
 
 **Secrets.** The rendered log shows what `show_full_output: true` would show: tool calls, tool output
 and the agent's text. GitHub still masks each secret it knows, but only verbatim. A secret that a
@@ -230,7 +234,7 @@ closes the group, so the action's own `::error::` lines still become annotations
 |---|---|---|
 | `execution-file` | input | A finished run to render: `claude-code-action`'s `execution_file`, or a `stream-json` file. Without it, the Action sets up the live modes. |
 | `stream-copy` | input | Live modes only: a file the wrapper appends the raw `stream-json` to, for debugging. Off by default, since it copies every tool output to disk. |
-| `claude` | input | Wrapper only: the `claude` the wrapper runs, in place of the one `claude-code-action` ships, for a host that starts its own through the Agent SDK. A relative path is from the workspace. Set for the job's later steps. |
+| `claude` | input | Wrapper only: the `claude` the wrapper runs, in place of the one `claude-code-action` ships, for a host that starts its own through the Agent SDK. A relative path is from the workspace. It holds for every later step of the job, `claude-code-action`'s included, and the wrapper reads the file anew each time it runs. |
 | `wrapper` | output | Live modes only, Linux only: the path to pass to `claude-code-action` as `path_to_claude_code_executable`, or to another Agent SDK host as `cli_path` (`pathToClaudeCodeExecutable`). |
 
 ---

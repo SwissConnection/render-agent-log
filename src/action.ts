@@ -44,7 +44,6 @@ function live(): void {
 
   const copy = input("stream-copy");
   if (copy !== "") fileCommand("GITHUB_ENV", `RENDER_AGENT_LOG_STREAM_COPY=${resolve(copy)}`);
-  // For the job, not one process: the SDK runs its version check (`-v`) without its options' env.
   const claude = input("claude") && resolve(input("claude"));
   if (claude !== "") fileCommand("GITHUB_ENV", `RENDER_AGENT_LOG_CLAUDE=${claude}`);
 

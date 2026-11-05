@@ -16,27 +16,39 @@ set -euo pipefail
 # step with the action.
 if [[ -n ${RENDER_AGENT_LOG_CLAUDE:-} ]]; then
   real=$RENDER_AGENT_LOG_CLAUDE
-  where="which the claude input names (RENDER_AGENT_LOG_CLAUDE)."
+  origin="It comes from the claude input (RENDER_AGENT_LOG_CLAUDE)."
 else
   arch=$(uname -m | sed 's/x86_64/x64/; s/aarch64/arm64/')
   real=${GITHUB_ACTION_PATH:-}/node_modules/@anthropic-ai/claude-agent-sdk-linux-$arch/claude
-  where="where claude-code-action ships it. Has the action moved it? Any other host names its own in the claude input."
+  origin="That is where claude-code-action ships it: has the action moved it? Any other host names its own in the claude input."
 fi
+
+own=$(readlink /proc/$$/fd/1 2>/dev/null || true)
+log=/proc/$PPID/fd/1
+parent=$(readlink "$log" 2>/dev/null || true)
+
+# Before any call is passed on, so that every one fails the same way, the SDK's version check included.
+if [[ ! -x $real ]]; then
+  problem="no claude at $real"
+  if [[ -e $real ]]; then problem="claude at $real is not executable"; fi
+  to=$log # unless the parent's stdout is not the log (below)
+  if [[ $parent != pipe:* || $parent == "$own" ]]; then to=/dev/stderr; fi
+  printf '::error::render-agent-log: %s. %s\n' "$problem" "$origin" >"$to"
+  exit 127
+fi
+
 case " $* " in
   *" --output-format stream-json "*) ;;
   *) exec "$real" "$@" ;;
 esac
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-own=$(readlink /proc/$$/fd/1 2>/dev/null || true)
 
 # The SDK spawns this script from the host's process (claude-code-action's bun), whose stdout is a pipe
 # to the runner: the step's log. Should a process ever sit between the SDK and this script, the
 # parent's stdout is no longer the log, and at worst it is the SDK's own stream, which rendered lines
 # would corrupt. Then the run goes unrendered, with a warning where the log most likely is: the
 # grandparent's stdout.
-log=/proc/$PPID/fd/1
-parent=$(readlink "$log" 2>/dev/null || true)
 if [[ $parent != pipe:* || $parent == "$own" ]]; then
   grandparent=$(awk '/^PPid:/ { print $2 }' "/proc/$PPID/status" 2>/dev/null || true)
   above=$(readlink "/proc/${grandparent:-0}/fd/1" 2>/dev/null || true)
@@ -45,11 +57,6 @@ if [[ $parent != pipe:* || $parent == "$own" ]]; then
       "$PPID" "${parent:-nothing}" >"/proc/$grandparent/fd/1"
   fi
   exec "$real" "$@"
-fi
-
-if [[ ! -x $real ]]; then
-  printf '::error::render-agent-log: no claude at %s, %s\n' "$real" "$where" >"$log"
-  exit 127
 fi
 
 # claude's stdout goes through tee to the SDK and to a file the renderer follows. A pipe to the

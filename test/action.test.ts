@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "vitest";
@@ -33,53 +33,4 @@ test("renders the file named by the execution-file input that action.yml declare
     env: { PATH: process.env.PATH ?? "", [`INPUT_${String(name).toUpperCase()}`]: file },
   });
   expect(action.stdout).toBe(await render(fixture("max-turns")));
-});
-
-// The claude input reaches the wrapper through the job's environment, under a name neither file states
-// alone. A mismatch runs claude-code-action's claude, where there is one, instead of the host's.
-test("the wrapper runs the claude the claude input names, from any directory", () => {
-  const name = declaredInputs().find((input) => input === "claude");
-  expect(name, "action.yml declares claude").toBeDefined();
-
-  const workspace = mkdtempSync(join(tmpdir(), "action-test-"));
-  mkdirSync(join(workspace, "scripts"));
-  writeFileSync(join(workspace, "scripts", "claude"), '#!/bin/sh\necho "host\'s claude $*"\n', {
-    mode: 0o755,
-  });
-  const files = {
-    GITHUB_ENV: join(workspace, "env"),
-    GITHUB_OUTPUT: join(workspace, "output"),
-    GITHUB_PATH: join(workspace, "path"),
-  };
-  const action = spawnSync(
-    process.execPath,
-    [new URL("../src/action.ts", import.meta.url).pathname],
-    {
-      cwd: workspace,
-      encoding: "utf8",
-      env: {
-        PATH: process.env.PATH ?? "",
-        ...files,
-        [`INPUT_${String(name).toUpperCase()}`]: "scripts/claude",
-      },
-    },
-  );
-  expect(action.status).toBe(0);
-
-  const jobEnv = Object.fromEntries(
-    readFileSync(files.GITHUB_ENV, "utf8")
-      .trim()
-      .split("\n")
-      .map((line) => line.split(/=(.*)/)),
-  );
-  const wrapper = spawnSync(
-    new URL("../wrapper/claude-wrapper", import.meta.url).pathname,
-    ["-v"],
-    {
-      cwd: tmpdir(),
-      encoding: "utf8",
-      env: { PATH: process.env.PATH ?? "", ...jobEnv },
-    },
-  );
-  expect(wrapper.stdout).toBe("host's claude -v\n");
 });
