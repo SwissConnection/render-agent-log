@@ -5,8 +5,8 @@ import { renderToStdout } from "./main.ts";
 import { gray } from "./style.ts";
 
 // The Action (action.yml). With `execution-file`, it renders a finished run. Without it, it sets up
-// the live modes for the job's later steps: `render-agent-log` on PATH, and the wrapper for
-// claude-code-action as the `wrapper` output.
+// the live modes for the job's later steps: `render-agent-log` on PATH, and the wrapper for an Agent
+// SDK host, claude-code-action or another, as the `wrapper` output.
 
 // The Action's own directory, pinned by the `uses:` ref: dist/action.js, or src/action.ts in tests.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -44,6 +44,8 @@ function live(): void {
 
   const copy = input("stream-copy");
   if (copy !== "") fileCommand("GITHUB_ENV", `RENDER_AGENT_LOG_STREAM_COPY=${resolve(copy)}`);
+  const claude = input("claude") && resolve(input("claude"));
+  if (claude !== "") fileCommand("GITHUB_ENV", `RENDER_AGENT_LOG_CLAUDE=${claude}`);
 
   // The wrapper reaches the step's log through /proc. Elsewhere the output stays empty, so
   // claude-code-action runs its own claude, unrendered.
@@ -58,7 +60,8 @@ function live(): void {
   }
   const wrapper = join(root, "wrapper", "claude-wrapper");
   fileCommand("GITHUB_OUTPUT", `wrapper=${wrapper}`);
-  process.stdout.write(`${gray(`· wrapper for claude-code-action at ${wrapper}`)}\n`);
+  const runs = claude === "" ? "" : `, running ${claude}`;
+  process.stdout.write(`${gray(`· wrapper at ${wrapper}${runs}`)}\n`);
 }
 
 const executionFile = input("execution-file");
