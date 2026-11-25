@@ -26,6 +26,8 @@ jobs:
           node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
           cache: npm
       - run: npm ci && npm run build
+      - name: "UX: denied markers"
+        run: bash ux/denied.sh
       - name: Set up the live modes
         uses: ./
       - name: edit-and-bash
