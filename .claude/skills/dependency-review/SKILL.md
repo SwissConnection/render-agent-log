@@ -55,10 +55,10 @@ Depth follows **reach × change**.
 ### Verdicts
 
 The test between red and amber: **would a log someone reads come out wrong because this merged as
-it is?** A message rendered as unknown that Claude now sends, a result under the wrong call, a command
-made live, an error shown as success, the wrapper failing inside claude-code-action: red. It cannot
-pass CI yet, but nothing a user sees changes (a stricter rule, a failed build, a check that could not
-run): amber. A break nothing reaches today is neither: it merges with a follow-up. What `main` already
+it is?** A result under the wrong call, a command made live, an error shown as success, the wrapper
+failing inside claude-code-action, a highlight.js change that alters text: red. It cannot pass CI yet,
+but nothing a user sees changes (a message type the new SDK adds fails the typecheck, a stricter rule,
+a failed build, a check that could not run): amber. A break nothing reaches today is neither: it merges with a follow-up. What `main` already
 does wrong is an existing bug, whatever new release exposes it: it goes in 🔴 after the breaks, its
 follow-up branches from `main`, and it never sets the verdict, since merging this changes nothing
 about it.
