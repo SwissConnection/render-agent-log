@@ -15,8 +15,8 @@
       groupSlug: "all",
     },
     {
-      // The Action's runtime is node24 (action.yml)
-      matchPackageNames: ["@types/node"],
+      // The Action's runtime is node24 (action.yml): its types, and the Node the workflows check on
+      matchPackageNames: ["@types/node", "node"],
       allowedVersions: "<25",
     },
   ],
