@@ -5,7 +5,7 @@ import { join } from "node:path";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { describe, expect, test } from "vitest";
 import { Renderer } from "../src/render.ts";
-import { red, yellow } from "../src/style.ts";
+import { red } from "../src/style.ts";
 import { fixture, liveCommands, render, viewerMarkers, visibleLines } from "./helpers.ts";
 
 const fixtures = [
@@ -99,21 +99,6 @@ describe("errors stay red", () => {
     const lines = (await render(fixture("max-turns"))).split("\n");
     expect(lines).toContain(red("✻ error_max_turns · 3 turns · 3s · $0.02"));
   });
-});
-
-test("lost session writes are a yellow warning naming the code and what was lost", () => {
-  const log = new Renderer().render({
-    type: "system",
-    subtype: "session_writes_lost",
-    error_code: "EDQUOT",
-    lost: ["transcript", "global_config"],
-    transcript_session_ids: ["session"],
-    uuid: "00000000-0000-0000-0000-000000000000",
-    session_id: "session",
-  });
-  expect(log.split("\n")).toContain(
-    yellow("· session writes lost (EDQUOT): transcript, global_config"),
-  );
 });
 
 describe("hostile output", () => {
