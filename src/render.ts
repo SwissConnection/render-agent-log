@@ -57,7 +57,7 @@ function unknownNote(message: unknown): string {
 const taskColor: Record<SDKTaskNotificationMessage["status"], Color> = {
   completed: gray,
   failed: red,
-  stopped: yellow,
+  stopped: brightYellow,
 };
 
 // How a task ended: a command's own summary, which holds its exit code, or an agent's status and cost.
