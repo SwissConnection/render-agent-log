@@ -46,6 +46,7 @@ jobs:
     timeout-minutes: 10
     outputs:
       tag: ${{ steps.version.outputs.tag }}
+      last: ${{ steps.version.outputs.last }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -82,7 +83,7 @@ jobs:
             tag="v$major.$middle.$((patch + 1))"
           fi
           echo "::notice::$last is followed by $tag."
-          echo "tag=$tag" >>"$GITHUB_OUTPUT"
+          printf 'tag=%s\nlast=%s\n' "$tag" "$last" >>"$GITHUB_OUTPUT"
 
   wrapper:
     needs: changes
@@ -115,6 +116,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           TAG: ${{ needs.changes.outputs.tag }}
+          LAST: ${{ needs.changes.outputs.last }}
         run: |
           set -euo pipefail
           # Before the tag exists: a tag without its release would read as released to the next run.
@@ -126,7 +128,8 @@ jobs:
           git -c user.name='github-actions[bot]' \
             -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit --quiet -m "$TAG"
           git push origin "HEAD:refs/tags/$TAG"
-          gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes --notes "$notes"
+          # Named: the release commits are off main, so GitHub's own guess of the one before is wrong
+          gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes --notes-start-tag "$LAST" --notes "$notes"
           # Last, so the major tag moves only to a published release. Through the API, the way past releases
           # moved it: a git push of a move that spans workflow changes may be refused to GITHUB_TOKEN.
           major=${TAG%%.*}
