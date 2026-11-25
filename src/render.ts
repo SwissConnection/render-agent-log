@@ -10,7 +10,7 @@ import type {
   Transport,
 } from "@anthropic-ai/claude-agent-sdk";
 import { markdown } from "./markdown.ts";
-import { bold, gray, grayItalic, green, red, yellow } from "./style.ts";
+import { bold, brightYellow, gray, grayItalic, green, red } from "./style.ts";
 import { cleanLine, cleanLines, defuse, oneLine, truncate } from "./text.ts";
 import {
   callArgument,
@@ -73,8 +73,8 @@ function taskEnd({ status, reason, summary, usage }: SDKTaskNotificationMessage)
 const previewTone: Record<Tone, Color> = {
   plain: gray,
   error: red,
-  stderr: yellow,
-  denied: yellow,
+  stderr: brightYellow,
+  denied: brightYellow,
   added: green,
   removed: red,
   hunk: gray,
@@ -82,8 +82,8 @@ const previewTone: Record<Tone, Color> = {
 const foldedTone: Record<Tone, Color> = {
   plain: (text) => text,
   error: (text) => text,
-  stderr: yellow,
-  denied: yellow,
+  stderr: brightYellow,
+  denied: brightYellow,
   added: green,
   removed: red,
   hunk: gray,
@@ -182,13 +182,13 @@ export class Renderer {
       case "api_retry": {
         const status = message.error_status === null ? "" : ` (${message.error_status})`;
         return [
-          yellow,
+          brightYellow,
           `· API retry ${message.attempt}/${message.max_retries}${status}: ${message.error}`,
         ];
       }
       case "session_writes_lost":
         return [
-          yellow,
+          brightYellow,
           `· session writes lost (${message.error_code}): ${message.lost.join(", ")}`,
         ];
       case "compact_boundary": {
@@ -196,13 +196,13 @@ export class Renderer {
         return [gray, `✻ compacted (${trigger}) · ${pre_tokens} tokens before`];
       }
       case "informational":
-        return [message.level === "warning" ? yellow : gray, `· ${message.content}`];
+        return [message.level === "warning" ? brightYellow : gray, `· ${message.content}`];
       case "notification":
         return [gray, `· ${message.text}`];
       case "local_command_output":
         return [gray, `· ${message.content}`];
       case "model_refusal_fallback":
-        return [yellow, `· ${message.content}`];
+        return [brightYellow, `· ${message.content}`];
       case "model_refusal_no_fallback":
         return [red, `· ${message.content}`];
       case "hook_response":

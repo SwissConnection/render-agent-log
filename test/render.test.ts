@@ -5,7 +5,7 @@ import { join } from "node:path";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { describe, expect, test } from "vitest";
 import { Renderer } from "../src/render.ts";
-import { red, yellow } from "../src/style.ts";
+import { brightYellow, red } from "../src/style.ts";
 import { fixture, liveCommands, render, viewerMarkers, visibleLines } from "./helpers.ts";
 
 const fixtures = [
@@ -99,13 +99,13 @@ describe("a result sits under its own call", () => {
     expect(lines.filter((line) => line.includes("Background command"))).toEqual([]);
   });
 
-  test("with a refused call, whose result is its denial, in yellow", async () => {
+  test("with a refused call, whose result is its denial, in bright yellow", async () => {
     const log = await render(fixture("highlighting"));
     const lines = visibleLines(log);
-    const denial = lines.indexOf("└ denied: This command requires approval");
+    const denial = lines.indexOf("└ ⚠ denied: This command requires approval");
     expect(lines[denial - 1]).toBe("● Bash(chmod +x scripts/release.sh)");
     expect(lines.filter((line) => line.includes("This command requires approval"))).toHaveLength(1);
-    expect(log).toContain(yellow("denied: This command requires approval"));
+    expect(log).toContain(brightYellow("⚠ denied: This command requires approval"));
   });
 
   test("with a refused call inside a subagent", () => {
@@ -152,7 +152,7 @@ describe("a result sits under its own call", () => {
       "● Read(README.md)",
       "● Agent(Release)",
       "│ ● Bash(rm -rf dist)",
-      "│ └ denied (rule): Permission to use Bash has been denied.",
+      "│ └ ⚠ denied (rule): Permission to use Bash has been denied.",
       "",
     ]);
   });
