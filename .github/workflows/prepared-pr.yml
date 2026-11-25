@@ -198,7 +198,8 @@ jobs:
           set -euo pipefail
           gh issue list --label prepared-pr --state open --limit 100 --json number,body |
             jq -r --arg base "prepared-pr/$ISSUE" \
-              '.[] | select(any(.body | splits("\r?\n"); . == "Branch from `\($base)`.")) | .number' |
+              '.[] | select([.body | splits("\r?\n") | select(startswith("Branch from `"))] | last == "Branch from `\($base)`.")
+                | .number' |
             while read -r waiting; do gh workflow run prepared-pr.yml --ref main -f issue="$waiting"; done
 
       # Only the agent's no or a change the check refused: a run that failed around it keeps the label
