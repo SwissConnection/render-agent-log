@@ -225,7 +225,7 @@
 [0m  [38;5;244m14[0m    [35mreturn[39m [36m`[39;39m${currency}[39;36m [39;39m${whole}[39;36m.[39;39m${rest}[39;36m`[39m;
 ::endgroup::
 [32m●[0m [1mBash[22m(chmod +x scripts/release.sh)
-[38;5;244m└[0m [93m⚠ denied: This command requires approval[0m
+[38;5;244m└[0m [93m⚠️ Denied: This command requires approval[0m
 ● All six steps are done, except that [1;36mscripts/release.sh[22;39m is not executable. The [1;36mchmod +x[22;39m I tried needed approval, so run it with [1;36mbash scripts/release.sh <version>[22;39m or [1;36mchmod +x[22;39m it yourself. I didn't run [1;36mrelease.sh[22;39m.
 [0m 
 [0m  The failing test, [1;36mtest_takes_the_last_units[22;39m, checks that reserving exactly the units in stock succeeds. [1;36mreserve[22;39m used [1;36mquantity >= available[22;39m and refused it, so I changed that to [1;36mquantity > available[22;39m. [1;36mscripts/check.sh[22;39m passes now.

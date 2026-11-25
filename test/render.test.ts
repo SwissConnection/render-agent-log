@@ -102,10 +102,10 @@ describe("a result sits under its own call", () => {
   test("with a refused call, whose result is its denial, in bright yellow", async () => {
     const log = await render(fixture("highlighting"));
     const lines = visibleLines(log);
-    const denial = lines.indexOf("└ ⚠ denied: This command requires approval");
+    const denial = lines.indexOf("└ ⚠️ Denied: This command requires approval");
     expect(lines[denial - 1]).toBe("● Bash(chmod +x scripts/release.sh)");
     expect(lines.filter((line) => line.includes("This command requires approval"))).toHaveLength(1);
-    expect(log).toContain(brightYellow("⚠ denied: This command requires approval"));
+    expect(log).toContain(brightYellow("⚠️ Denied: This command requires approval"));
   });
 
   test("with a refused call inside a subagent", () => {
@@ -152,7 +152,7 @@ describe("a result sits under its own call", () => {
       "● Read(README.md)",
       "● Agent(Release)",
       "│ ● Bash(rm -rf dist)",
-      "│ └ ⚠ denied (rule): Permission to use Bash has been denied.",
+      "│ └ ⚠️ Denied (rule): Permission to use Bash has been denied.",
       "",
     ]);
   });

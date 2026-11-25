@@ -79,7 +79,7 @@ const toLines = (text: string, tone: Tone): OutputLine[] =>
 // model gets in its tool_result. `other` is the SDK's kind for none.
 export function deniedOutput(kind: string | undefined, message: string): Output {
   const shown = kind === undefined || kind === "other" ? "" : ` (${kind})`;
-  return { lines: toLines(`⚠ denied${shown}: ${message}`, "denied") };
+  return { lines: toLines(`⚠️ Denied${shown}: ${message}`, "denied") };
 }
 
 // A tool call as its result needs it.
