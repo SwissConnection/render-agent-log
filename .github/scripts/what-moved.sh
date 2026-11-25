@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # The dependency note's table of what moved between two commits: package.json's packages, the actions
-# the workflows pin, their runners, and a count of the rest of the lock. Usage: what-moved.sh <base> <head>
+# the workflows pin, their runners and Node, and a count of the rest of the lock.
+# Usage: what-moved.sh <base> <head>
 set -euo pipefail
 base=$1 head=$2
 
@@ -17,12 +18,15 @@ runners() {
   git grep -h -oE 'runs-on: ubuntu-[0-9.]+' "$1" -- .github/workflows | sed -E 's/^runs-on: (.*)$/\1\trunner\t\1/' |
     sed -E 's/^ubuntu-[0-9.]+\t/ubuntu\t/' | sort -u
 }
+nodes() {
+  git grep -h -oE 'node-version: [0-9.]+' "$1" -- .github/workflows | sed -E 's/^node-version: (.*)$/node\tnode\t\1/' | sort -u
+}
 lock() {
   git show "$1:package-lock.json" | jq -r '.packages | to_entries[] | select(.key != "") | "\(.key)\t\(.value.version)"' | sort
 }
 
-rows=$(join -t $'\t' -j1 <(for f in packages actions runners; do "$f" "$base"; done | awk -F '\t' '{ print $1 "/" $2 "\t" $3 }' | sort) \
-  <(for f in packages actions runners; do "$f" "$head"; done | awk -F '\t' '{ print $1 "/" $2 "\t" $3 }' | sort) |
+rows=$(join -t $'\t' -j1 <(for f in packages actions runners nodes; do "$f" "$base"; done | awk -F '\t' '{ print $1 "/" $2 "\t" $3 }' | sort) \
+  <(for f in packages actions runners nodes; do "$f" "$head"; done | awk -F '\t' '{ print $1 "/" $2 "\t" $3 }' | sort) |
   awk -F '\t' '$2 != $3')
 # The lock's other packages that moved: not the ones above, which are there too
 listed=$(awk -F '\t' '$1 ~ /\/(runtime|dev)$/ { sub(/\/(runtime|dev)$/, "", $1); print "node_modules/" $1 }' <<<"$rows")
