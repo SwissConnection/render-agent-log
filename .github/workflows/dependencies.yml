@@ -1,0 +1,238 @@
+# The note on Renovate's PR (#22, .github/scripts/dependency-note.sh): what moved, the typecheck against
+# the branch's Agent SDK, a real run of the Claude Code that SDK ships through the branch's renderer,
+# and the wrapper's live checks. Everything is against the merge base with main, so a later bump on
+# main does not show, reversed, as this PR's.
+name: Dependencies
+
+on:
+  push:
+    branches: ["renovate/**"]
+  # The push's run starts this one on its branch. By hand, on a branch with no PR, it writes only the
+  # run's summary.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer head replaces the checks of the older one
+concurrency:
+  group: dependencies-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  # claude-code-action, which the wrapper's checks run, refuses a push event
+  dispatch:
+    name: Start as a dispatch
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run dependencies.yml --ref "$GITHUB_REF_NAME"
+
+  moved:
+    name: What moved
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    outputs:
+      base: ${{ steps.moved.outputs.base }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the merge base
+          persist-credentials: false
+      - name: The table, and the Reviewing note
+        id: moved
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          base=$(git merge-base HEAD origin/main)
+          echo "base=$base" >>"$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/checks"
+          bash .github/scripts/what-moved.sh "$base" HEAD >"$RUNNER_TEMP/checks/moved.md"
+          bash .github/scripts/dependency-note.sh compose reviewing "$RUNNER_TEMP/checks" |
+            bash .github/scripts/dependency-note.sh put
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: moved
+          path: ${{ runner.temp }}/checks/moved.md
+
+  types:
+    name: Typecheck
+    needs: moved
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the merge base
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
+          cache: npm
+      - run: npm ci
+      # tsc names each message type the renderer does not handle (AGENTS.md rule 1); the diff is for reading
+      - name: Typecheck, and the SDK's types against the merge base's
+        env:
+          BASE: ${{ needs.moved.outputs.base }}
+        run: |
+          set -euo pipefail
+          out=$RUNNER_TEMP/types
+          mkdir -p "$out"
+          sdk='.devDependencies["@anthropic-ai/claude-agent-sdk"]'
+          old=$(git show "$BASE:package.json" | jq -r "$sdk")
+          new=$(jq -r "$sdk" package.json)
+          errors=0
+          npx tsc >"$out/tsc.txt" 2>&1 || errors=$(grep -c 'error TS' "$out/tsc.txt" || echo 1)
+          if ((errors == 0)); then
+            echo "✅ **Typecheck** against Agent SDK $new: the renderer handles every message type" >"$out/typecheck.md"
+          else
+            {
+              echo "❌ **Typecheck** against Agent SDK $new: $errors error$( ((errors == 1)) || echo s)"
+              echo
+              echo '```'
+              head -c 10000 "$out/tsc.txt"
+              echo '```'
+            } >"$out/typecheck.md"
+          fi
+          if [[ $old != "$new" ]]; then
+            bash .github/scripts/type-diff.sh "$old" "$new" >"$out/types.diff"
+            {
+              echo "<details><summary>The SDK's types, $old → $new: $(grep -c '^[+-][^+-]' "$out/types.diff" || true) lines changed</summary>"
+              echo
+              echo '```diff'
+              head -c 30000 "$out/types.diff"
+              echo
+              echo '```'
+              if (($(wc -c <"$out/types.diff") > 30000)); then
+                echo
+                echo "The first 30 KB: the whole diff is in the run's \`types\` artifact."
+              fi
+              echo
+              echo "</details>"
+            } >"$out/diff.md"
+          fi
+          cat "$out/typecheck.md"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: types
+          path: ${{ runner.temp }}/types/
+
+  canary:
+    name: A real run
+    needs: moved
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
+          cache: npm
+      - run: npm ci && npm run build
+
+      # The claude that the SDK installs with it, so its version is the one whose types the branch has.
+      # Its rendering here is the sample a reviewer reads.
+      - name: Claude Code, rendered
+        timeout-minutes: 10
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          PROMPT: |
+            Work in the current directory, which is empty. Keep a short to-do list of these steps as you go.
+            Write notes.txt with three short lines, read it back, then edit its second line.
+            Find the file with a glob, search it for "line", and run `wc -l notes.txt`.
+            Then have a subagent read notes.txt and report its first line.
+            End with one sentence on what you did.
+        run: |
+          set -euo pipefail
+          out=$RUNNER_TEMP/canary
+          mkdir -p "$out/work"
+          cd "$out/work"
+          "$GITHUB_WORKSPACE/node_modules/@anthropic-ai/claude-agent-sdk-linux-x64/claude" -p "$PROMPT" \
+            --model haiku --max-turns 30 --allowedTools "Bash,Read,Write,Edit,Glob,Grep,Agent,Task,TodoWrite" \
+            --output-format stream-json --verbose |
+            tee "$out/stream.jsonl" | node "$GITHUB_WORKSPACE/dist/index.js" | tee "$out/rendered.log"
+
+      - name: What the renderer does not know
+        if: ${{ !cancelled() }}
+        env:
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          out=$RUNNER_TEMP/canary
+          # A stream cut short by the timeout ends in half a line, and a skipped run leaves none
+          version=$(jq -r 'select(.type == "system" and .subtype == "init") | .claude_code_version' \
+            "$out/stream.jsonl" 2>/dev/null | head -n 1 || true)
+          messages=$(grep -c . "$out/stream.jsonl" || true)
+          unknown=$(bash .github/scripts/unknown-messages.sh "$out/rendered.log" 2>/dev/null || true)
+          if [[ -z $version ]]; then
+            line="❌ **A real run** did not start · [run]($RUN)"
+          elif [[ -n $unknown ]]; then
+            line="❌ **A real run** of Claude Code $version: $messages messages, some the renderer cannot show: $unknown · [run]($RUN)"
+          else
+            line="✅ **A real run** of Claude Code $version: $messages messages, all rendered · [run]($RUN)"
+          fi
+          echo "$line" | tee "$out/canary.md"
+          [[ $line == ✅* ]]
+
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: canary
+          path: |
+            ${{ runner.temp }}/canary/canary.md
+            ${{ runner.temp }}/canary/stream.jsonl
+
+  wrapper:
+    needs: moved
+    uses: ./.github/workflows/wrapper.yml
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+  note:
+    name: The note
+    needs: [moved, types, canary, wrapper]
+    if: ${{ always() && needs.moved.result == 'success' }}
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Merged, since a run with a single artifact would put its files at the top anyway
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: ${{ runner.temp }}/checks
+          merge-multiple: true
+      - name: Write it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          WRAPPER: ${{ needs.wrapper.result }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          checks=$RUNNER_TEMP/checks
+          action=$(grep -oE 'claude-code-action@[0-9a-f]+ # v[0-9.]+' .github/workflows/wrapper.yml | sed 's/.*# //')
+          if [[ $WRAPPER == success ]]; then
+            echo "✅ **The wrapper** in claude-code-action $action: every case as expected · [run]($RUN)"
+          else
+            echo "❌ **The wrapper** in claude-code-action $action: $WRAPPER · [run]($RUN)"
+          fi >"$checks/wrapper.md"
+          bash .github/scripts/dependency-note.sh compose incomplete "$checks" | bash .github/scripts/dependency-note.sh put

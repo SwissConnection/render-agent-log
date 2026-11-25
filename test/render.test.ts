@@ -1,4 +1,7 @@
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { describe, expect, test } from "vitest";
 import { Renderer } from "../src/render.ts";
@@ -135,11 +138,14 @@ describe("a message the build does not know", () => {
   };
 
   test("prints one line for an unknown type", () => {
-    expectOneLine({ type: "from_a_newer_sdk" }, "· from_a_newer_sdk");
+    expectOneLine({ type: "from_a_newer_sdk" }, "· from_a_newer_sdk (unknown message type)");
   });
 
   test("prints one line for an unknown system subtype", () => {
-    expectOneLine({ type: "system", subtype: "from_a_newer_sdk" }, "· system/from_a_newer_sdk");
+    expectOneLine(
+      { type: "system", subtype: "from_a_newer_sdk" },
+      "· system/from_a_newer_sdk (unknown subtype)",
+    );
   });
 
   test("prints one line for a message of a known type in a shape it does not know", () => {
@@ -147,5 +153,27 @@ describe("a message the build does not know", () => {
       { type: "assistant", message: null },
       "· unrenderable assistant message (TypeError)",
     );
+  });
+
+  // The dependency PR's real run fails on these lines; a reworded one would pass it silently.
+  test("is what the dependency check finds, and nothing in a run it knows", async () => {
+    const found = (log: string) => {
+      const file = join(mkdtempSync(join(tmpdir(), "unknown-")), "rendered.log");
+      writeFileSync(file, log);
+      return execFileSync("bash", [".github/scripts/unknown-messages.sh", file], {
+        encoding: "utf8",
+      });
+    };
+    const renderer = new Renderer();
+    const unknown = [
+      { type: "from_a_newer_sdk" },
+      { type: "system", subtype: "from_a_newer_sdk" },
+      { type: "system", subtype: "from_a_newer_sdk" },
+      { type: "assistant", message: null },
+    ].map((message) => renderer.render(message as unknown as SDKMessage));
+    expect(found(unknown.join(""))).toBe(
+      "`from_a_newer_sdk` ×1, `system/from_a_newer_sdk` ×2, `unrenderable assistant message (TypeError)` ×1",
+    );
+    expect(found(await render(fixture("subagent")))).toBe("");
   });
 });
