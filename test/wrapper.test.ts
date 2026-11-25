@@ -29,14 +29,19 @@ function script(dir: string, name: string, body: string): string {
 }
 
 // Runs the wrapper under the stand-in SDK. `renderer` replaces the node that runs the renderer,
-// `shim` puts a process between the SDK and the wrapper, and `copy` asks for the raw copy.
+// `shim` puts a process between the SDK and the wrapper, `copy` asks for the raw copy, and `pause`
+// has claude stop after its first line.
 function runWrapper(
   stream: string,
-  options: { renderer?: string; shim?: boolean; copy?: boolean } = {},
+  options: { renderer?: string; shim?: boolean; copy?: boolean; pause?: boolean } = {},
 ): Run {
   const dir = mkdtempSync(join(tmpdir(), "wrapper-test-"));
-  writeFileSync(join(dir, "stream.jsonl"), stream);
-  const claude = script(dir, "claude", `exec cat "${join(dir, "stream.jsonl")}"`);
+  const file = join(dir, "stream.jsonl");
+  writeFileSync(file, stream);
+  const print = options.pause
+    ? `head -n 1 "${file}"; sleep 1; tail -n +2 "${file}"`
+    : `exec cat "${file}"`;
+  const claude = script(dir, "claude", print);
   const target = options.shim ? script(dir, "shim", `"${wrapper}" "$@"`) : wrapper;
   const out = join(dir, "sdk.json");
   const child = spawn("bash", ["-c", 'node "$0" "$1" "$2" | cat', fakeSdk, target, out], {
@@ -113,6 +118,15 @@ describe.skipIf(process.platform !== "linux")("the wrapper", () => {
       expect(await log, `attempt ${attempt}`).toBe("::endgroup::\n");
     }
   }, 40_000);
+
+  test("keeps the whole raw copy when the renderer dies before the stream ends", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "wrapper-dead-copy-"));
+    const stream = fixture("subagent");
+    const renderer = script(dir, "node", "exit 1");
+    const { log, dir: run } = runWrapper(stream, { renderer, copy: true, pause: true });
+    await log;
+    expect(readFileSync(join(run, "copy.jsonl"), "utf8")).toBe(stream);
+  }, 20_000);
 
   test("lets the run complete when the renderer hangs", async () => {
     const dir = mkdtempSync(join(tmpdir(), "wrapper-hung-"));
