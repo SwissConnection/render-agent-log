@@ -1,7 +1,5 @@
-# One follow-up's draft PR (.github/scripts/prepared-pr/, from swissconn-workspace's prepared PRs): a fix
-# agent's change, checked and reviewed by a second agent, in a job whose token cannot write; then published as
-# the App, from main's ops environment. Started by the dependency review for each issue it labels
-# prepared-pr, and by hand on main for any issue labeled so.
+# One follow-up's draft PR (.github/scripts/prepared-pr/): prepared where no token can write, published as
+# the App from main's ops environment.
 name: Prepared PR
 run-name: "Prepared PR for #${{ inputs.issue }}"
 
@@ -32,6 +30,7 @@ jobs:
       pull-requests: read
     outputs:
       base: ${{ steps.issue.outputs.base }}
+      base_sha: ${{ steps.checkout.outputs.commit }}
       milestone: ${{ steps.issue.outputs.milestone }}
     steps:
       # Its last line names the branch it builds on (.claude/skills/dependency-review/write.md)
@@ -123,10 +122,11 @@ jobs:
       contents: read
       issues: write
     steps:
+      # The commit the change was made on: the branch may have moved since
       - name: Checkout the base
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.prepare.outputs.base }}
+          ref: ${{ needs.prepare.outputs.base_sha }}
           persist-credentials: false
       - name: Checkout the scripts
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

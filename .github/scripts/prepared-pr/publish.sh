@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
-# The follow-ups' publish steps, run from a copy in $RUNNER_TEMP taken before the patch is applied,
-# since the patch could change this file.
-#   publish.sh check DIR   apply DIR/change.patch, and refuse what a draft PR must not carry. A refusal is the
-#                          flow's result: why.md says why, refused=true in $GITHUB_OUTPUT, and it exits 0
-#   publish.sh open DIR    commit, push prepared-pr/$ISSUE linked to the issue, open the draft PR in its
-#                          issue's milestone; on another PR's branch, in one stack with that PR. The change as
-#                          reviewed and the answer to the review are a commit each, the review on the first
+# A prepared PR's publish steps. Runs from a copy taken before the patch is applied, which could change it.
+# Usage: publish.sh check|open DIR
 set -euo pipefail
 cmd="$1" dir="$2"
 
@@ -15,9 +10,8 @@ link_branch() {
     || echo "::warning::${1} not linked to #${ISSUE}"
 }
 
-# One GitHub stack with the PR whose branch is the base, so both merge in one step. --base: the checkout
-# has no default branch for gh stack to find. A later follow-up joins by stack number: listing PRs would
-# drop the earlier one.
+# --base: the checkout has no default branch for gh stack to find. A later follow-up joins by stack
+# number: listing PRs would drop the earlier one.
 stack_on() {
   local parent stack
   parent=$(gh pr view "$1" --json number --jq .number) \

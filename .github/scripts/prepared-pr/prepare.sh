@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
-# The prepare job's agent (from swissconn-workspace's prepared PRs), then up to 3 rounds in which publish.sh's
-# check, run as the publish job runs it, tells the agent what would keep its change from a draft PR; then a
-# fresh agent's review (review.md), the author's answer to its findings and one re-review. Leaves
-# $RUNNER_TEMP/followup/change.patch and pr.md, and from the review review-1.md and .json, and after an answer
-# before-review.patch and review-2.*. Exits non-zero and saves nothing when Claude itself fails. Needs CLAUDE,
-# PROMPT, BASE_SHA, ISSUE and ISSUE_FILE, and beside it publish.sh, review.md and agent-settings.json, out of
-# the agent's tree.
+# A prepared PR's change (from swissconn-workspace): the fix agent, the check, a fresh agent's review, one
+# answer and one re-review, into $RUNNER_TEMP/followup. Exits non-zero, saving nothing, when Claude fails.
 set -uo pipefail
 
 FIX_UP_ROUNDS=3
@@ -181,7 +176,6 @@ precheck() {
   return "${status}"
 }
 
-# No change, and pr.md says why
 agent_said_no() {
   [[ ! -s "${followup}/change.patch" && -n "$(head -n 1 "${followup}/pr.md" 2>/dev/null)" ]]
 }

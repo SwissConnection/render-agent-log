@@ -61,15 +61,10 @@ Releases are cut by `release.yml` on each push to `main` that changes what users
 minor when a merged PR has the `minor` label. Never push a release tag by hand. `dist/` is not
 committed: the release builds it, and a workflow that runs `uses: ./` builds it first.
 
-Renovate (`renovate.yml`, `.github/renovate.json5`) keeps one PR with every dependency on the newest
-versions, daily. `dependencies.yml` writes its note, the description a reader sees: what moved, the
-typecheck against the new SDK, a real run of the new Claude Code through the branch's renderer, and
-the wrapper's live checks (`.github/scripts/dependency-note.sh`). An agent reviews it
-(`.claude/skills/dependency-review`, also `/dependency-review` locally) and writes the verdict at the
-top; it files what the update owes or enables as issues, without holding a token that can write.
-Each one it labels `prepared-pr` arrives as a reviewed draft PR (`prepared-pr.yml`,
-`.github/scripts/prepared-pr/`); dispatch that workflow on `main` with an issue number to prepare one
-by hand.
+Renovate (`renovate.yml`) keeps one dependency PR on the newest versions, daily. `dependencies.yml`
+checks it and has an agent review it (`.claude/skills/dependency-review`, `/dependency-review` locally);
+each follow-up it labels `prepared-pr` arrives as a draft PR (`prepared-pr.yml`, which also takes an
+issue number by hand on `main`).
 
 CI (`.github/workflows/ci.yml`) runs all but `fix`. The SDK is imported with `import type` only;
 nothing of it may reach `dist/`. highlight.js, with every language it has, is the one runtime dependency and most of

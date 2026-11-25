@@ -2,8 +2,7 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["config:recommended"],
 
-  // One PR for everything, kept on the newest versions by the daily run (renovate.yml): Claude's
-  // packages move almost every weekday anyway (#22).
+  // One daily PR: Claude's packages move almost every weekday anyway (#22)
   dependencyDashboard: false,
   separateMajorMinor: false,
   minimumReleaseAge: "3 days",
@@ -20,7 +19,6 @@
     },
   ],
 
-  // The note (dependencies.yml) is the description a reader sees; Renovate shows only its warnings.
   prBodyTemplate: "<!-- dependencies.yml writes this description (.github/scripts/dependency-note.sh). -->{{{warnings}}}",
   fetchChangeLogs: "off",
 }
