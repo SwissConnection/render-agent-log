@@ -1,8 +1,8 @@
 # Releases each push to main that changes what users run: CI, then the wrapper's live checks on real
 # Claude, then the built dist/ committed on top as the release commit, which is not on main, tagged
-# vX.Y.Z, and the major tag moved to it. A patch, or a minor when a PR merged since the last release has
-# the `minor` label; a new major only by hand. A failed run releases nothing, and the next push's run
-# releases what it held back.
+# vX.Y.Z, and the major tag moved to it. A patch, or a minor or a major when a PR merged since the last
+# release has the `minor` or `major` label; a major releases even when nothing users run changed. A failed
+# run releases nothing, and the next push's run releases what it held back.
 name: Release
 
 on:
@@ -65,23 +65,27 @@ jobs:
         run: |
           set -euo pipefail
           last=$(git tag --list 'v*.*.*' --sort=-v:refname | head -n 1)
+          bump="patch"
+          for sha in $(git rev-list "$last..HEAD"); do
+            labels=$(gh api "repos/$GH_REPO/commits/$sha/pulls" --jq '.[].labels[].name')
+            if grep -qx major <<<"$labels"; then
+              bump="major"
+            elif grep -qx minor <<<"$labels" && [[ $bump == patch ]]; then
+              bump="minor"
+            fi
+          done
           # Staged, so the diff sees the ignored dist/
           git add --force dist
-          if git diff --cached --quiet "$last" -- dist action.yml wrapper bin; then
+          if [[ $bump != major ]] && git diff --cached --quiet "$last" -- dist action.yml wrapper bin; then
             echo "::notice::Nothing users run changed since $last, so nothing is released."
             exit 0
           fi
-          minor=false
-          for sha in $(git rev-list "$last..HEAD"); do
-            labels=$(gh api "repos/$GH_REPO/commits/$sha/pulls" --jq '.[].labels[].name')
-            if grep -qx minor <<<"$labels"; then minor=true; fi
-          done
           IFS=. read -r major middle patch <<<"${last#v}"
-          if [[ $minor == true ]]; then
-            tag="v$major.$((middle + 1)).0"
-          else
-            tag="v$major.$middle.$((patch + 1))"
-          fi
+          case $bump in
+            major) tag="v$((major + 1)).0.0" ;;
+            minor) tag="v$major.$((middle + 1)).0" ;;
+            patch) tag="v$major.$middle.$((patch + 1))" ;;
+          esac
           echo "::notice::$last is followed by $tag."
           printf 'tag=%s\nlast=%s\n' "$tag" "$last" >>"$GITHUB_OUTPUT"
 
