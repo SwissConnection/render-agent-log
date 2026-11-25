@@ -74,6 +74,7 @@ run's result as JSON after the `✻` summary line; that comes from the action it
 render-agent-log can't suppress it.
 
 Pin the Action to a release: `@v0` follows the latest `v0.x.y`, and a release's commit SHA fixes it.
+`@main` does not work, since only a release holds the built Action.
 
 ---
 <br/>

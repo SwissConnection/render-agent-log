@@ -77,6 +77,8 @@ tee=$!
   # the step's log into it, the action's own ::error:: included.
   if [[ ${PIPESTATUS[1]} -ne 0 ]]; then printf '::endgroup::\n'; fi
   if [[ -n ${RENDER_AGENT_LOG_STREAM_COPY:-} ]]; then
+    # A renderer that dies early takes tail with it, before the stream has ended.
+    while kill -0 "$tee" 2>/dev/null; do sleep 0.1; done
     cat -- "$buffer" >>"$RENDER_AGENT_LOG_STREAM_COPY"
   fi
   rm -f -- "$buffer"

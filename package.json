@@ -14,6 +14,7 @@
     "typecheck": "tsc",
     "lint": "biome check",
     "fix": "biome check --write",
+    "pretest": "npm run build",
     "test": "vitest run"
   },
   "devDependencies": {

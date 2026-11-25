@@ -1,9 +1,9 @@
 name: CI
 
+# A push to main runs it through release.yml, which releases only after it passes.
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read
@@ -31,12 +31,3 @@ jobs:
         run: npx biome ci
       - name: Test
         run: npm test
-      - name: dist/ matches the source
-        run: |
-          npm run build
-          if [ -n "$(git status --porcelain -- dist)" ]; then
-            git status --short -- dist
-            git diff -- dist
-            echo "::error::dist/ is stale. Run npm run build and commit dist/."
-            exit 1
-          fi

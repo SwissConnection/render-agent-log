@@ -28,8 +28,7 @@ it from being copied.
 
 | What | Why it exists | Instead |
 |---|---|---|
-| The wrapper reaches the log through `/proc/$PPID/fd/1` and relies on how `claude-code-action` starts `claude` (#2) | It is the only way to render live from inside the action | Never a second thing built on those internals. `spike-wrapper.yml` re-checks them after an action bump; the CLI and execution-file modes depend on nothing of the kind |
-| `dist/` is committed, 1.8 MB of it highlight.js | A JavaScript action runs from the repository as checked out, with no build step | CI fails when it differs from a fresh build; nothing else is generated and committed |
+| The wrapper reaches the log through `/proc/$PPID/fd/1` and relies on how `claude-code-action` starts `claude` (#2) | It is the only way to render live from inside the action | Never a second thing built on those internals. `wrapper.yml` re-checks them before every release; the CLI and execution-file modes depend on nothing of the kind |
 | `demo/src/cart.js` has a bug | `demo.yml` has Claude fix it for the README's screenshots | Nothing in AGENTS.md says to leave it: the demo's agent reads AGENTS.md too and stopped to ask (#18). The note is in `demo.yml`, which it does not read |
 
 ---
