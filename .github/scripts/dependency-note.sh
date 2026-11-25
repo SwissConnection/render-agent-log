@@ -35,7 +35,8 @@ checks() {
 
 review() {
   local dir=$1 review=$2 line
-  while IFS= read -r line; do
+  # An agent's last line may lack its newline
+  while IFS= read -r line || [[ -n $line ]]; do
     case $line in
       "<!-- what moved -->") moved "$dir" ;;
       "<!-- checks -->") checks "$dir" "❌ no result" ;;
