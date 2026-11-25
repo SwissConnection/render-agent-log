@@ -145,6 +145,11 @@ export class Renderer {
           `· API retry ${message.attempt}/${message.max_retries}${status}: ${message.error}`,
         ];
       }
+      case "session_writes_lost":
+        return [
+          yellow,
+          `· session writes lost (${message.error_code}): ${message.lost.join(", ")}`,
+        ];
       case "compact_boundary": {
         const { trigger, pre_tokens } = message.compact_metadata;
         return [gray, `✻ compacted (${trigger}) · ${pre_tokens} tokens before`];

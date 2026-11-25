@@ -53,7 +53,7 @@ dropped silently and never crashes the renderer.
 | user text | gray `›` and the text, previewed and folded like tool output: a subagent's prompt, or a message injected into the run |
 | subagent messages (`parent_tool_use_id` set) | indented under the Agent call by a gray `│` per level. A fold, title and lines, has no gutter |
 | `result` | `✻ <subtype> · N turns · Ns · $X` (green, or red on error with the `errors` under it). A line per `result`: a run with background subagents sends several. Turns and duration count per result, while `total_cost_usd` is the session's total so far |
-| `system/api_retry`, `compact_boundary`, `informational`, `notification`, `hook_response`, `local_command_output`, `model_refusal_*` | one line: yellow for a retry, a warning or a refusal fallback, red for a refusal or a failed hook, gray otherwise |
+| `system/api_retry`, `session_writes_lost`, `compact_boundary`, `informational`, `notification`, `hook_response`, `local_command_output`, `model_refusal_*` | one line: yellow for a retry, lost session writes, a warning or a refusal fallback, red for a refusal or a failed hook, gray otherwise |
 | `active_goal` | gray `· goal: <condition> · N iterations · <last reason>`, or `· goal cleared` |
 | `control_request`, `control_response`, `control_cancel_request`, `keep_alive` | dropped: the control protocol between the SDK and `claude` |
 | `task_*`, `tool_progress`, `rate_limit_event`, `thinking_tokens`, `stream_event`, and the other progress and UI-state messages listed in `src/render.ts` | dropped: they are progress, not transcript |
