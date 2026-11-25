@@ -8,7 +8,8 @@ const span = (on: string, off: string) => (text: string) =>
 export const gray = span("38;5;244", "0");
 export const red = span("31", "0");
 export const green = span("32", "0");
-export const yellow = span("33", "0");
+// Bright: the light theme's yellow is nearly as dark as its text
+export const brightYellow = span("93", "0");
 export const grayItalic = span("3;38;5;244", "0");
 // Bold and inline code turn off only what they turned on, so they can sit inside colored text.
 export const bold = span("1", "22");

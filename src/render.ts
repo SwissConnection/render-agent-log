@@ -2,6 +2,7 @@ import type {
   SDKActiveGoalMessage,
   SDKAssistantMessage,
   SDKMessage,
+  SDKPermissionDeniedMessage,
   SDKResultMessage,
   SDKTaskNotificationMessage,
   SDKUserMessage,
@@ -9,10 +10,11 @@ import type {
   Transport,
 } from "@anthropic-ai/claude-agent-sdk";
 import { markdown } from "./markdown.ts";
-import { bold, gray, grayItalic, green, red, yellow } from "./style.ts";
+import { bold, brightYellow, gray, grayItalic, green, red } from "./style.ts";
 import { cleanLine, cleanLines, defuse, oneLine, truncate } from "./text.ts";
 import {
   callArgument,
+  deniedOutput,
   type Output,
   type OutputLine,
   resultOutput,
@@ -42,10 +44,6 @@ export type StdoutMessage =
   ReturnType<Transport["readMessages"]> extends AsyncGenerator<infer Message> ? Message : never;
 
 type SystemMessage = Extract<SDKMessage, { type: "system" }>;
-type ToolResult = Extract<
-  Exclude<SDKUserMessage["message"]["content"], string>[number],
-  { type: "tool_result" }
->;
 type Color = (text: string) => string;
 
 // The line for a message type or system subtype this build does not know. It says so: a few known
@@ -60,7 +58,7 @@ function unknownNote(message: unknown): string {
 const taskColor: Record<SDKTaskNotificationMessage["status"], Color> = {
   completed: gray,
   failed: red,
-  stopped: yellow,
+  stopped: brightYellow,
 };
 
 // How a task ended: a command's own summary, which holds its exit code, or an agent's status and cost.
@@ -76,7 +74,8 @@ function taskEnd({ status, reason, summary, usage }: SDKTaskNotificationMessage)
 const previewTone: Record<Tone, Color> = {
   plain: gray,
   error: red,
-  stderr: yellow,
+  stderr: brightYellow,
+  denied: brightYellow,
   added: green,
   removed: red,
   hunk: gray,
@@ -84,7 +83,8 @@ const previewTone: Record<Tone, Color> = {
 const foldedTone: Record<Tone, Color> = {
   plain: (text) => text,
   error: (text) => text,
-  stderr: yellow,
+  stderr: brightYellow,
+  denied: brightYellow,
   added: green,
   removed: red,
   hunk: gray,
@@ -101,6 +101,8 @@ function goalNote({ value }: SDKActiveGoalMessage): string {
 // result can be put under its own call, and a subagent's messages under the Agent call.
 export class Renderer {
   readonly #calls = new Map<string, Call>();
+  // The calls refused whose tool_result has not come yet: it repeats the denial, so it prints nothing.
+  readonly #denied = new Set<string>();
   // The calls the last printed line sits under. A line for another call first repeats its header.
   #context: string[] = [];
   #cwd = "";
@@ -137,6 +139,10 @@ export class Renderer {
           this.#taskNotification(message);
           break;
         }
+        if (message.subtype === "permission_denied") {
+          this.#denial(message);
+          break;
+        }
         const note = this.#systemNote(message);
         if (note !== undefined) this.#note(...note);
         break;
@@ -168,7 +174,7 @@ export class Renderer {
 
   // The one line a system message prints, or undefined for one that prints nothing.
   #systemNote(
-    message: Exclude<SystemMessage, SDKTaskNotificationMessage>,
+    message: Exclude<SystemMessage, SDKTaskNotificationMessage | SDKPermissionDeniedMessage>,
   ): [Color, string] | undefined {
     switch (message.subtype) {
       case "init":
@@ -177,13 +183,13 @@ export class Renderer {
       case "api_retry": {
         const status = message.error_status === null ? "" : ` (${message.error_status})`;
         return [
-          yellow,
+          brightYellow,
           `· API retry ${message.attempt}/${message.max_retries}${status}: ${message.error}`,
         ];
       }
       case "session_writes_lost":
         return [
-          yellow,
+          brightYellow,
           `· session writes lost (${message.error_code}): ${message.lost.join(", ")}`,
         ];
       case "compact_boundary": {
@@ -191,13 +197,13 @@ export class Renderer {
         return [gray, `✻ compacted (${trigger}) · ${pre_tokens} tokens before`];
       }
       case "informational":
-        return [message.level === "warning" ? yellow : gray, `· ${message.content}`];
+        return [message.level === "warning" ? brightYellow : gray, `· ${message.content}`];
       case "notification":
         return [gray, `· ${message.text}`];
       case "local_command_output":
         return [gray, `· ${message.content}`];
       case "model_refusal_fallback":
-        return [yellow, `· ${message.content}`];
+        return [brightYellow, `· ${message.content}`];
       case "model_refusal_no_fallback":
         return [red, `· ${message.content}`];
       case "hook_response":
@@ -208,7 +214,6 @@ export class Renderer {
       case "elicitation_complete":
       case "memory_recall":
       case "mirror_error":
-      case "permission_denied":
       case "worker_shutting_down":
         return [gray, `· system/${message.subtype}`];
       // Progress and UI state, not transcript.
@@ -270,7 +275,15 @@ export class Renderer {
     for (const block of content) {
       switch (block.type) {
         case "tool_result":
-          this.#toolResult(block, results === 1 ? message.tool_use_result : undefined, chain);
+          if (this.#denied.delete(block.tool_use_id)) break;
+          this.#toolResult(block.tool_use_id, chain, (call) =>
+            resultOutput(
+              block.content,
+              block.is_error === true,
+              results === 1 ? message.tool_use_result : undefined,
+              call,
+            ),
+          );
           break;
         case "text":
           this.#userText(chain, block.text);
@@ -324,12 +337,11 @@ export class Renderer {
     this.#context = [...chain, id];
   }
 
-  #toolResult(block: ToolResult, toolUseResult: unknown, messageChain: string[]): void {
-    const id = block.tool_use_id;
+  // A call's outcome under it, worked out once the call is known: its result, or its denial.
+  #toolResult(id: string, messageChain: string[], outcome: (call: Call) => Output): void {
     const call = this.#calls.get(id) ?? this.#unknownCall(id, messageChain);
     this.#enter([...call.chain, id]);
-    const output = resultOutput(block.content, block.is_error === true, toolUseResult, call);
-    this.#output(call.chain.length, output);
+    this.#output(call.chain.length, outcome(call));
     call.returned = true;
     // The call is done: anything printed for it later (a background Agent's subagent) repeats it.
     this.#context = call.chain;
@@ -344,6 +356,16 @@ export class Renderer {
     this.#enter([...call.chain, id]);
     this.#line(call.chain.length, gray("└"), taskColor[message.status](oneLine(taskEnd(message))));
     this.#context = call.chain;
+  }
+
+  // A refused call's outcome, shown as its result.
+  #denial({
+    tool_use_id: id,
+    decision_reason_type: kind,
+    message,
+  }: SDKPermissionDeniedMessage): void {
+    this.#toolResult(id, [], () => deniedOutput(kind, message));
+    this.#denied.add(id);
   }
 
   // Makes `chain` the context, repeating the header of each call in it the log is not under.

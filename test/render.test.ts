@@ -5,7 +5,7 @@ import { join } from "node:path";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { describe, expect, test } from "vitest";
 import { Renderer } from "../src/render.ts";
-import { red } from "../src/style.ts";
+import { brightYellow, red } from "../src/style.ts";
 import { fixture, liveCommands, render, viewerMarkers, visibleLines } from "./helpers.ts";
 
 const fixtures = [
@@ -97,6 +97,64 @@ describe("a result sits under its own call", () => {
   test("with a foreground task, whose result alone shows how it ended", async () => {
     const lines = visibleLines(await render(fixture("edit-and-bash")));
     expect(lines.filter((line) => line.includes("Background command"))).toEqual([]);
+  });
+
+  test("with a refused call, whose result is its denial, in bright yellow", async () => {
+    const log = await render(fixture("highlighting"));
+    const lines = visibleLines(log);
+    const denial = lines.indexOf("└ ⚠️ Denied: This command requires approval");
+    expect(lines[denial - 1]).toBe("● Bash(chmod +x scripts/release.sh)");
+    expect(lines.filter((line) => line.includes("This command requires approval"))).toHaveLength(1);
+    expect(log).toContain(brightYellow("⚠️ Denied: This command requires approval"));
+  });
+
+  test("with a refused call inside a subagent", () => {
+    const renderer = new Renderer();
+    const call = (id: string, name: string, input: unknown, parent: string | null) => ({
+      type: "assistant",
+      message: { content: [{ type: "tool_use", id, name, input }] },
+      parent_tool_use_id: parent,
+    });
+    const messages = [
+      call("agent", "Agent", { description: "Release" }, null),
+      call("bash", "Bash", { command: "rm -rf dist" }, "agent"),
+      call("read", "Read", { file_path: "README.md" }, null),
+      {
+        type: "system",
+        subtype: "permission_denied",
+        tool_name: "Bash",
+        tool_use_id: "bash",
+        agent_id: "a1",
+        decision_reason_type: "rule",
+        message: "Permission to use Bash has been denied.",
+      },
+      {
+        type: "user",
+        message: {
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: "bash",
+              is_error: true,
+              content: "Permission to use Bash has been denied.",
+            },
+          ],
+        },
+        parent_tool_use_id: "agent",
+      },
+    ];
+    const lines = visibleLines(
+      messages.map((message) => renderer.render(message as unknown as SDKMessage)).join(""),
+    );
+    expect(lines).toEqual([
+      "● Agent(Release)",
+      "│ ● Bash(rm -rf dist)",
+      "● Read(README.md)",
+      "● Agent(Release)",
+      "│ ● Bash(rm -rf dist)",
+      "│ └ ⚠️ Denied (rule): Permission to use Bash has been denied.",
+      "",
+    ]);
   });
 });
 
