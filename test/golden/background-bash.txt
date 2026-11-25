@@ -1,0 +1,16 @@
+[38;5;244m✻ claude-sonnet-5 · /home/runner/work/demo/demo[0m
+● I'll start the tests and the build in the background.
+[32m●[0m [1mBash[22m(npm test >/tmp/checks.log 2>&1)
+[32m●[0m [1mBash[22m(sleep 2 && echo built >/tmp/build.log)
+[32m●[0m [1mBash[22m(npm test >/tmp/checks.log 2>&1)
+[38;5;244m└[0m [38;5;244mCommand running in background with ID: bchk0001. Output is being written to: /tmp/claude-1001/-home-runner-work-demo-demo/5b0c7e1a-3d2f-4a8e-9c61-2f7d8e4b1a90/tasks/bchk0001.output[0m
+[32m●[0m [1mBash[22m(sleep 2 && echo built >/tmp/build.log)
+[38;5;244m└[0m [38;5;244mCommand running in background with ID: bbld0002. Output is being written to: /tmp/claude-1001/-home-runner-work-demo-demo/5b0c7e1a-3d2f-4a8e-9c61-2f7d8e4b1a90/tasks/bbld0002.output[0m
+[32m●[0m [1mBash[22m(sleep 2 && echo built >/tmp/build.log)
+[38;5;244m└[0m [38;5;244mbackground: completed[0m
+[32m●[0m [1mBash[22m(cat /tmp/build.log)
+[38;5;244m└[0m [38;5;244mbuilt[0m
+[32m●[0m [1mBash[22m(npm test >/tmp/checks.log 2>&1)
+[38;5;244m└[0m [31mbackground: failed[0m
+● The build finished; the test suite failed. Its log is in [1;36m/tmp/checks.log[22;39m.
+[32m✻ success · 4 turns · 6s · $0.03[0m

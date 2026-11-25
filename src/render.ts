@@ -3,6 +3,7 @@ import type {
   SDKAssistantMessage,
   SDKMessage,
   SDKResultMessage,
+  SDKTaskNotificationMessage,
   SDKUserMessage,
   SDKUserMessageReplay,
   Transport,
@@ -23,6 +24,8 @@ interface Call {
   header: string;
   // The Agent calls this call runs under, outermost first: its subagent nesting.
   chain: string[];
+  // Whether its result has been shown: a task that ends after that ran in the background.
+  returned: boolean;
 }
 
 // Everything claude writes to stdout in stream-json mode: the SDKMessage union, plus the control
@@ -41,6 +44,22 @@ function unknownNote(message: unknown): string {
   return subtype === undefined
     ? `· ${String(type)} (unknown message type)`
     : `· ${String(type)}/${String(subtype)} (unknown subtype)`;
+}
+
+const taskColor: Record<SDKTaskNotificationMessage["status"], Color> = {
+  completed: gray,
+  failed: red,
+  stopped: yellow,
+};
+
+// How a task ended, and what it cost when it was an agent.
+function taskEnd({ status, reason, usage }: SDKTaskNotificationMessage): string {
+  const parts = [`background: ${status}${reason === undefined ? "" : ` (${reason})`}`];
+  if (usage !== undefined) {
+    parts.push(`${Math.round(usage.duration_ms / 1000)}s`);
+    parts.push(`${usage.tool_uses} tool use${usage.tool_uses === 1 ? "" : "s"}`);
+  }
+  return parts.join(" · ");
 }
 
 const previewTone: Record<Tone, Color> = {
@@ -103,6 +122,10 @@ export class Renderer {
         this.#summary(message);
         break;
       case "system": {
+        if (message.subtype === "task_notification") {
+          this.#taskNotification(message);
+          break;
+        }
         const note = this.#systemNote(message);
         if (note !== undefined) this.#note(...note);
         break;
@@ -133,7 +156,9 @@ export class Renderer {
   }
 
   // The one line a system message prints, or undefined for one that prints nothing.
-  #systemNote(message: SystemMessage): [Color, string] | undefined {
+  #systemNote(
+    message: Exclude<SystemMessage, SDKTaskNotificationMessage>,
+  ): [Color, string] | undefined {
     switch (message.subtype) {
       case "init":
         this.#cwd = message.cwd;
@@ -184,7 +209,6 @@ export class Renderer {
       case "task_started":
       case "task_progress":
       case "task_updated":
-      case "task_notification":
       case "background_tasks_changed":
       case "thinking_tokens":
       case "session_state_changed":
@@ -282,7 +306,8 @@ export class Renderer {
   }
 
   #unknownCall(id: string, chain: string[]): Call {
-    const call = { header: gray(`· unknown call ${truncate(oneLine(id), argumentWidth)}`), chain };
+    const header = gray(`· unknown call ${truncate(oneLine(id), argumentWidth)}`);
+    const call = { header, chain, returned: false };
     this.#calls.set(id, call);
     return call;
   }
@@ -290,7 +315,7 @@ export class Renderer {
   #call(id: string, name: string, input: unknown, chain: string[]): void {
     const argument = truncate(callArgument(name, input, this.#cwd), argumentWidth);
     const header = `${green("●")} ${bold(oneLine(name))}${argument === "" ? "" : `(${argument})`}`;
-    this.#calls.set(id, { header, chain });
+    this.#calls.set(id, { header, chain, returned: false });
     this.#enter(chain);
     this.#line(chain.length, header);
     this.#context = [...chain, id];
@@ -300,7 +325,19 @@ export class Renderer {
     const call = this.#calls.get(id) ?? this.#unknownCall(id, messageChain);
     this.#enter([...call.chain, id]);
     this.#output(call.chain.length, output);
+    call.returned = true;
     // The call is done: anything printed for it later (a background Agent's subagent) repeats it.
+    this.#context = call.chain;
+  }
+
+  // A task that outlived its call ends under it. One that ends before its call returns ran in the
+  // foreground, and its result is about to show how it went.
+  #taskNotification(message: SDKTaskNotificationMessage): void {
+    const id = message.tool_use_id;
+    const call = id === undefined ? undefined : this.#calls.get(id);
+    if (id === undefined || call === undefined || !call.returned || message.skip_transcript) return;
+    this.#enter([...call.chain, id]);
+    this.#line(call.chain.length, gray("└"), taskColor[message.status](oneLine(taskEnd(message))));
     this.#context = call.chain;
   }
 

@@ -40,6 +40,8 @@ jobs:
         run: render-agent-log < fixtures/claude/subagent.jsonl
       - name: subagents-background
         run: render-agent-log < fixtures/claude/subagents-background.jsonl
+      - name: background-bash
+        run: render-agent-log < fixtures/claude/background-bash.jsonl
       - name: thinking
         run: render-agent-log < fixtures/claude/thinking.jsonl
       - name: max-turns

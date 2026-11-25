@@ -1,7 +1,7 @@
 # Claude Code fixtures
 
 Real `claude -p … --output-format stream-json --verbose` streams, one `SDKMessage` per line, plus one
-hand-made stream of hostile tool output. The renderer's golden files and targeted tests read these.
+hand-made stream of hostile tool output and one of background Bash calls. The renderer's golden files and targeted tests read these.
 
 | File | Covers |
 |---|---|
@@ -12,6 +12,7 @@ hand-made stream of hostile tool output. The renderer's golden files and targete
 | `thinking.jsonl` | Captured with `--thinking-display summarized`: a `thinking` block with text, a Read, the answer, and a run of `system/thinking_tokens` |
 | `max-turns.jsonl` | `--max-turns 2`: the final `result` is `error_max_turns` with `is_error: true` and `errors` |
 | `hostile-output.jsonl` | Hand-made (see below) |
+| `background-bash.jsonl` | Hand-made from the envelopes of `edit-and-bash.jsonl`, with the background call's result as seen in swissconn-workspace's runs: two parallel Bash calls with `run_in_background`, whose results only say where the output goes; the one started second ends first (`completed`), a foreground Bash runs, then the first ends `failed`. A real capture should replace it |
 | `execution-file.json` | `claude-code-action`'s `execution_file` from a `demo.yml` run, as the action writes it: one pretty-printed JSON array. Claude fixes the demo shop's failing test: Bash, Grep, Read, an Edit, a failed `cd` |
 
 Shapes worth knowing:

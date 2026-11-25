@@ -43,12 +43,14 @@
 [38;5;244m│ [0m[0m  [38;5;244m```[0m
 [38;5;244m│ [0m[0m 
 [38;5;244m│ [0m[0m  It runs Node's built-in test runner. With no file arguments, it auto-discovers test files in the project, such as [1;36m*.test.js[22;39m, [1;36mtest/**[22;39m and similar patterns. The package has [1;36m"type": "module"[22;39m, so [1;36m.js[22;39m test files load as ES modules.
+[38;5;244m└[0m [38;5;244mbackground: completed · 4s · 1 tool use[0m
 [38;5;244m✻ claude-sonnet-5 · /home/runner/work/demo/demo[0m
 [32m●[0m [1mAgent[22m(List exported functions in src)
 [38;5;244m│ [0m● - greet — src/greet.js
 [38;5;244m│ [0m[0m  - sum — src/sum.js
 [38;5;244m│ [0m[0m 
 [38;5;244m│ [0m[0m  The full paths are under [1;36m/home/runner/work/demo/demo/[22;39m. I searched [1;36msrc/[22;39m for [1;36mexport[22;39m statements and for CommonJS [1;36mmodule.exports[22;39m / [1;36mexports.[22;39m patterns. Only these two ES-module function exports turned up.
+[38;5;244m└[0m [38;5;244mbackground: completed · 6s · 2 tool uses[0m
 ● The test-script agent is done: [1;36mnpm test[22;39m runs [1;36mnode --test[22;39m, Node's built-in test runner. I'm still waiting on the agent listing exported functions in [1;36msrc/[22;39m, so I'll give the three-line answer once it finishes.
 [32m✻ success · 3 turns · 5s · $0.10[0m
 [32m✻ success · 1 turn · 2s · $0.10[0m
