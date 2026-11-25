@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Files the review's follow-ups (followups.json, .claude/skills/dependency-review/write.md) and writes
-# numbers.txt, "F1 52" per line, for the note. With --dry-run it files nothing and numbers nothing.
+# Files the review's follow-ups (.claude/skills/dependency-review/write.md), and starts the prepared PR of
+# each one whose branch exists; one chained on a new follow-up starts when that one's PR opens.
 # Usage: file-followups.sh <review dir> <pr> [--dry-run]
 set -euo pipefail
 review=$1 pr=$2 dry=${3:-}
@@ -21,14 +21,20 @@ jq -c '.[]' "$review/followups.json" | while IFS= read -r followup; do
   labels=(--label dependencies)
   [[ $(jq -r .prepared <<<"$followup") != true ]] || labels+=(--label prepared-pr)
   [[ $(jq -r .bug <<<"$followup") != true ]] || labels+=(--label bug)
+  branch=$(jq -r .branch <<<"$followup" | bash "$(dirname "$0")/dependency-note.sh" number "$review/numbers.txt")
   body="$(jq -r .body <<<"$followup")
 
-From the dependency review of #$pr."
+From the dependency review of #$pr.
+
+Branch from \`$branch\`."
   if [[ -n $dry ]]; then
-    echo "would file $id: $title (${labels[*]})"
+    echo "would file $id: $title (${labels[*]}), from $branch"
     continue
   fi
   url=$(gh issue create --title "$title" --body "$body" "${labels[@]}" --milestone "Dependency updates" --assignee gaborv)
   echo "$id ${url##*/}" >>"$review/numbers.txt"
   echo "filed $id: $url"
+  if [[ $(jq -r .prepared <<<"$followup") == true ]] && gh api "repos/$GH_REPO/branches/$branch" >/dev/null 2>&1; then
+    gh workflow run prepared-pr.yml --ref main -f issue="${url##*/}"
+  fi
 done

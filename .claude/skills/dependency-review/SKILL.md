@@ -91,8 +91,9 @@ branches from `main` and merges first.
      value, a result under the wrong call, or a wrong indent is a finding even when the check passed.
      Find the message behind it in `stream.jsonl`. Whether `main`'s renderer does the same tells an
      existing bug from a new one: render the line through `node src/index.ts` on a one-line file.
-   - `wrapper.md`: the wrapper's live checks in the new claude-code-action. A failure's log is in the
-     run (`gh run view "$RUN_ID" --log-failed`).
+   - `wrapper.md`: the wrapper's live checks in the new claude-code-action. A failed job's log comes from
+     `gh api repos/{owner}/{repo}/actions/jobs/<id>/logs`, its id from `…/actions/runs/$RUN_ID/jobs`;
+     `gh run view` refuses this run, which is still going.
 3. **Release notes**, for the attention set the decision rule picks. The Agent SDK and Claude Code: the
    `CHANGELOG.md` of `anthropics/claude-code` between the two versions (the SDK's 0.3.N goes with Claude
    Code 2.1.N), read for stream-json, SDK messages, tools, and the flags our workflows pass.

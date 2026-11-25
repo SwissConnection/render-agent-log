@@ -1,0 +1,221 @@
+# One follow-up's draft PR (.github/scripts/prepared-pr/): prepared where no token can write, published as
+# the App from main's ops environment.
+name: Prepared PR
+run-name: "Prepared PR for #${{ inputs.issue }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: The follow-up's issue number
+        required: true
+        type: number
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prepared-pr-${{ inputs.issue }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    # Setup 5, the agent 60, the review's two rounds 20 each
+    timeout-minutes: 110
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      base: ${{ steps.issue.outputs.base }}
+      base_sha: ${{ steps.checkout.outputs.commit }}
+      milestone: ${{ steps.issue.outputs.milestone }}
+    steps:
+      # Its last line names the branch it builds on (.claude/skills/dependency-review/write.md)
+      - name: The issue and its base
+        id: issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE: ${{ inputs.issue }}
+        run: |
+          set -euo pipefail
+          gh issue view "$ISSUE" --json title,body,milestone >"$RUNNER_TEMP/issue.json"
+          jq -r '"# \(.title)\n\n\(.body)"' "$RUNNER_TEMP/issue.json" >"$RUNNER_TEMP/issue.md"
+          # shellcheck disable=SC2016 # the backticks are the line's, not a command
+          base=$(jq -r '.body' "$RUNNER_TEMP/issue.json" | sed -n 's/^Branch from `\([^`]*\)`\.\r\{0,1\}$/\1/p' | tail -n 1)
+          printf 'base=%s\nmilestone=%s\n' "${base:-main}" "$(jq -r '.milestone.title // empty' "$RUNNER_TEMP/issue.json")" \
+            >>"$GITHUB_OUTPUT"
+
+      - name: Checkout the base
+        id: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.issue.outputs.base }}
+          fetch-depth: 0 # main, for its Claude Code
+          persist-credentials: false
+
+      # This run's scripts, not the base's, which another follow-up's agent wrote; out of the agent's tree
+      - name: Checkout the scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: run-scripts
+          sparse-checkout: .github
+          persist-credentials: false
+      - name: Keep the scripts
+        run: |
+          mkdir -p "$RUNNER_TEMP/scripts"
+          cp run-scripts/.github/scripts/prepared-pr/* run-scripts/.github/scripts/install-claude.sh \
+            run-scripts/.github/agent-settings.json "$RUNNER_TEMP/scripts/"
+          rm -rf run-scripts
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
+          cache: npm
+      - run: npm ci && npm run build
+      - name: main's Claude Code
+        run: echo "CLAUDE=$(bash "$RUNNER_TEMP/scripts/install-claude.sh" origin/main)" >>"$GITHUB_ENV"
+      - uses: SwissConnection/render-agent-log@v0
+
+      - name: Run Claude Code
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # The job's own token, read only: the agent writes nothing to GitHub
+          GH_TOKEN: ${{ github.token }}
+          # A command that reaches its timeout stops, instead of holding the step to its limit in the background
+          CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
+          BASE_SHA: ${{ steps.checkout.outputs.commit }}
+          ISSUE: ${{ inputs.issue }}
+          ISSUE_FILE: ${{ runner.temp }}/issue.md
+          PROMPT: |
+            Implement issue #${{ inputs.issue }}, in `${{ runner.temp }}/issue.md`, in the checked-out `${{ steps.issue.outputs.base }}`. The outcome it asks for sets the scope, nothing beyond it.
+            Within it, find the right model: the simplest correct shape in our idioms (AGENTS.md, docs/spec.md, docs/craft.md), even when that reshapes the code the fix touches. A fix the issue names is a starting point, not the design.
+            Run what the change could break: `npm run typecheck`, `npm run lint`, `npm test` (the wrapper's tests run on Linux only). A golden file you regenerate is read, line by line, before you keep it.
+            Leave only the change in the working tree and commit nothing: a later job commits every file you add or change and opens the draft PR.
+            Write `${{ runner.temp }}/followup/pr.md`: the PR's title on the first line, a blank line, then its description in plain words: what changes and why, and what you ran. Without `Closes #N`; it is added.
+            If what the issue asks for does not hold, change nothing and write there, in a sentence or two, why.
+            Never write the mention that summons Claude anywhere; it starts an agent run.
+        run: bash "$RUNNER_TEMP/scripts/prepare.sh"
+
+      # Not after a Claude that failed to run: its issue keeps the label for the next try
+      - name: Upload the change
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: followup
+          path: ${{ runner.temp }}/followup/
+          retention-days: 1
+
+  publish:
+    name: Open the PR
+    needs: prepare
+    # A fresh runner: the agent could have changed git or tools a later step in its job would use
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    environment:
+      name: ops
+      deployment: false
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      contents: read
+      issues: write
+    steps:
+      # The commit the change was made on: the branch may have moved since
+      - name: Checkout the base
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.prepare.outputs.base_sha }}
+          persist-credentials: false
+      - name: Checkout the scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: run-scripts
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: followup
+          path: ${{ runner.temp }}/followup
+
+      - name: Check the change
+        id: check
+        env:
+          DIR: ${{ runner.temp }}/followup
+        # Out of the tree before the patch could change it
+        run: |
+          cp run-scripts/.github/scripts/prepared-pr/publish.sh "$RUNNER_TEMP/"
+          rm -rf run-scripts
+          bash "$RUNNER_TEMP/publish.sh" check "$DIR"
+
+      - name: Get the App's token
+        id: app
+        if: steps.check.outputs.refused != 'true'
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          client-id: ${{ vars.SWISSCONN_OPS_CLIENT_ID }}
+          private-key: ${{ secrets.SWISSCONN_OPS_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-issues: write
+          permission-pull-requests: write
+          # The dependency PR's branch, which a stacked follow-up builds on, moves workflow files
+          permission-workflows: write
+
+      # For a follow-up on another PR's branch: publish.sh links it into one stack with that PR
+      - name: Install gh stack
+        if: needs.prepare.outputs.base != 'main' && steps.check.outputs.refused != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # renovate: datasource=github-releases depName=github/gh-stack
+          GH_STACK_VERSION: v0.3.0
+        run: gh extension install github/gh-stack --pin "$GH_STACK_VERSION"
+
+      # The App's events start workflows, unlike GITHUB_TOKEN's: the draft's own CI runs
+      - name: Push and open the draft PR
+        id: open
+        if: steps.check.outputs.refused != 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE: ${{ inputs.issue }}
+          BASE: ${{ needs.prepare.outputs.base }}
+          MILESTONE: ${{ needs.prepare.outputs.milestone }}
+          BOT: ${{ steps.app.outputs.app-slug }}[bot]
+          CI_FILES: ${{ steps.check.outputs.ci }}
+          DIR: ${{ runner.temp }}/followup
+        run: bash "$RUNNER_TEMP/publish.sh" open "$DIR"
+
+      # A follow-up that builds on this one waited for its branch
+      - name: Prepare what builds on it
+        if: steps.check.outputs.refused != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE: ${{ inputs.issue }}
+        run: |
+          set -euo pipefail
+          gh issue list --label prepared-pr --state open --limit 100 --json number,body |
+            jq -r --arg base "prepared-pr/$ISSUE" \
+              '.[] | select([.body | splits("\r?\n") | select(startswith("Branch from `"))] | last == "Branch from `\($base)`.")
+                | .number' |
+            while read -r waiting; do gh workflow run prepared-pr.yml --ref main -f issue="$waiting"; done
+
+      # Only the agent's no or a change the check refused: a run that failed around it keeps the label
+      - name: Hand the issue back
+        if: steps.check.outputs.refused == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE: ${{ inputs.issue }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue comment "$ISSUE" --body "The agent did not make this change ([run]($RUN)). It stays a follow-up.
+
+          <details><summary>Why</summary>
+
+          $(<"$RUNNER_TEMP/why.md")
+
+          </details>"
+          gh issue edit "$ISSUE" --remove-label prepared-pr
