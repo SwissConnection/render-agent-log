@@ -100,6 +100,46 @@ describe("a result sits under its own call", () => {
   });
 });
 
+// A subagent's results come without tool_use_result. Each main-thread result here has both.
+describe("a result without tool_use_result", () => {
+  const messagesOf = (name: string) =>
+    fixture(name)
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+  const toLog = (messages: unknown[]) =>
+    messages.map((message) => JSON.stringify(message)).join("\n");
+
+  test("renders a Read, and a Write that creates a file, as it would with it", async () => {
+    let stripped = 0;
+    for (const name of fixtures) {
+      const messages = messagesOf(name);
+      for (const message of messages) {
+        const result = message.type === "user" ? message.tool_use_result : undefined;
+        if (result?.type === "text" || result?.type === "create") {
+          delete message.tool_use_result;
+          stripped++;
+        }
+      }
+      expect(await render(toLog(messages)), name).toBe(await render(fixture(name)));
+    }
+    expect(stripped).toBeGreaterThan(10);
+  });
+
+  test("shows an Edit as its old and new text", async () => {
+    const messages = messagesOf("edit-and-bash");
+    for (const message of messages)
+      if (message.tool_use_result?.oldString === "i <= values.length")
+        delete message.tool_use_result;
+    const lines = visibleLines(await render(toLog(messages)));
+    const edit = lines.indexOf("● Edit(src/sum.js)");
+    expect(lines.slice(edit + 1, edit + 3)).toEqual([
+      "│ -i <= values.length",
+      "└ +i < values.length",
+    ]);
+  });
+});
+
 describe("errors stay red", () => {
   test("a failed call's preview", async () => {
     const lines = (await render(fixture("edit-and-bash"))).split("\n");

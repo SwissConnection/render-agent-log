@@ -11,7 +11,14 @@ import type {
 import { markdown } from "./markdown.ts";
 import { bold, gray, grayItalic, green, red, yellow } from "./style.ts";
 import { cleanLine, cleanLines, defuse, oneLine, truncate } from "./text.ts";
-import { callArgument, type Output, type OutputLine, resultOutput, type Tone } from "./tools.ts";
+import {
+  callArgument,
+  type Output,
+  type OutputLine,
+  resultOutput,
+  type Tone,
+  type ToolCall,
+} from "./tools.ts";
 
 const previewLines = 3;
 const previewWidth = 200;
@@ -20,7 +27,7 @@ const argumentWidth = 140;
 // the line from starting with whitespace, which the runner trims before it looks for `::`.
 const blank = "\x1b[0m ";
 
-interface Call {
+interface Call extends ToolCall {
   header: string;
   // The Agent calls this call runs under, outermost first: its subagent nesting.
   chain: string[];
@@ -35,6 +42,10 @@ export type StdoutMessage =
   ReturnType<Transport["readMessages"]> extends AsyncGenerator<infer Message> ? Message : never;
 
 type SystemMessage = Extract<SDKMessage, { type: "system" }>;
+type ToolResult = Extract<
+  Exclude<SDKUserMessage["message"]["content"], string>[number],
+  { type: "tool_result" }
+>;
 type Color = (text: string) => string;
 
 // The line for a message type or system subtype this build does not know. It says so: a few known
@@ -259,15 +270,7 @@ export class Renderer {
     for (const block of content) {
       switch (block.type) {
         case "tool_result":
-          this.#toolResult(
-            block.tool_use_id,
-            resultOutput(
-              block.content,
-              block.is_error === true,
-              results === 1 ? message.tool_use_result : undefined,
-            ),
-            chain,
-          );
+          this.#toolResult(block, results === 1 ? message.tool_use_result : undefined, chain);
           break;
         case "text":
           this.#userText(chain, block.text);
@@ -307,7 +310,7 @@ export class Renderer {
 
   #unknownCall(id: string, chain: string[]): Call {
     const header = gray(`· unknown call ${truncate(oneLine(id), argumentWidth)}`);
-    const call = { header, chain, returned: false };
+    const call = { name: "", input: undefined, header, chain, returned: false };
     this.#calls.set(id, call);
     return call;
   }
@@ -315,15 +318,17 @@ export class Renderer {
   #call(id: string, name: string, input: unknown, chain: string[]): void {
     const argument = truncate(callArgument(name, input, this.#cwd), argumentWidth);
     const header = `${green("●")} ${bold(oneLine(name))}${argument === "" ? "" : `(${argument})`}`;
-    this.#calls.set(id, { header, chain, returned: false });
+    this.#calls.set(id, { name, input, header, chain, returned: false });
     this.#enter(chain);
     this.#line(chain.length, header);
     this.#context = [...chain, id];
   }
 
-  #toolResult(id: string, output: Output, messageChain: string[]): void {
+  #toolResult(block: ToolResult, toolUseResult: unknown, messageChain: string[]): void {
+    const id = block.tool_use_id;
     const call = this.#calls.get(id) ?? this.#unknownCall(id, messageChain);
     this.#enter([...call.chain, id]);
+    const output = resultOutput(block.content, block.is_error === true, toolUseResult, call);
     this.#output(call.chain.length, output);
     call.returned = true;
     // The call is done: anything printed for it later (a background Agent's subagent) repeats it.

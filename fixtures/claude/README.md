@@ -23,6 +23,8 @@ Shapes worth knowing:
 - `tool_use_result` is an object on success but a plain string (`"Error: Exit code 1\n…"`) on a failed
   Bash call.
 - A tool result's `content` is a string for most tools and an array of text blocks for Agent.
+- A subagent's results (`parent_tool_use_id` set) carry no `tool_use_result`: a Read's `content` is the
+  tool's `cat -n` form, `1\t…` per line and a numbered empty line at the end.
 - `thinking` text is empty (only a `signature`) unless the run asks for `--thinking-display summarized`,
   the SDK's `thinking.display` option. Every other capture here ran without it.
 - In `subagents-background.jsonl`, `num_turns` and `duration_ms` restart with each `result`, while
