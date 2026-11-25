@@ -6,6 +6,8 @@
   dependencyDashboard: false,
   separateMajorMinor: false,
   minimumReleaseAge: "3 days",
+  // Its checks run the workflows on its branch, so they stay main's
+  rebaseWhen: "behind-base-branch",
   packageRules: [
     {
       matchPackageNames: ["*"],
