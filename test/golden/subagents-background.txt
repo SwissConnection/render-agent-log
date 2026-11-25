@@ -30,8 +30,7 @@
 ● Both subagents are running in the background. I'll wait for their results before answering.
 [32m●[0m [1mAgent[22m(Report npm test script)
 [38;5;244m│ [0m[32m●[0m [1mRead[22m(package.json)
-[38;5;244m│ [0m[38;5;244m│[0m [38;5;244m1	{ "name": "demo", "type": "module", "scripts": { "test": "node --test" } }[0m
-[38;5;244m│ [0m[38;5;244m└[0m [38;5;244m2	[0m
+[38;5;244m│ [0m[38;5;244m└[0m [38;5;244m1  { "name": "demo", "type": "module", "scripts": { "test": "node --test" } }[0m
 [32m●[0m [1mAgent[22m(List exported functions in src)
 [38;5;244m│ [0m[32m●[0m [1mGrep[22m(module\.exports|exports\.)
 [38;5;244m│ [0m[38;5;244m└[0m [38;5;244mNo matches found[0m

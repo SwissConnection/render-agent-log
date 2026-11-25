@@ -58,8 +58,9 @@ On macOS, run them in a container: copy the tree without `node_modules` into `no
 `npm ci && npm test -- test/wrapper.test.ts`.
 
 Releases are cut by `release.yml` on each push to `main` that changes what users run: a patch, or a
-minor when a merged PR has the `minor` label. Never push a release tag by hand. `dist/` is not
-committed: the release builds it, and a workflow that runs `uses: ./` builds it first.
+minor or a major when a merged PR has the `minor` or `major` label (a major releases even with nothing
+changed). Never push a release tag by hand. `dist/` is not committed: the release builds it, and a
+workflow that runs `uses: ./` builds it first.
 
 Renovate (`renovate.yml`) keeps one dependency PR on the newest versions, daily. `dependencies.yml`
 checks it and has an agent review it (`.claude/skills/dependency-review`, `/dependency-review` locally);
