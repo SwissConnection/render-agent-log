@@ -5,7 +5,7 @@ import type {
 } from "@anthropic-ai/claude-agent-sdk/sdk-tools";
 import { highlight, languageOf } from "./highlight.ts";
 import { gray, green } from "./style.ts";
-import { cleanLine, cleanLines, oneLine } from "./text.ts";
+import { cleanLine, cleanLines, oneLine, splitLines } from "./text.ts";
 
 // What a tool call and its result show. Tool inputs and `tool_use_result` are untyped at runtime
 // (`unknown` in the SDK), so every shape is checked before use.
@@ -75,41 +75,104 @@ export function contentText(content: unknown): string {
 const toLines = (text: string, tone: Tone): OutputLine[] =>
   cleanLines(text, true).map((line) => ({ text: line, tone }));
 
+// A tool call as its result needs it.
+export interface ToolCall {
+  name: string;
+  input: unknown;
+}
+
 // A tool result as lines. `toolUseResult` is an object on success and a plain string on a failed
-// Bash call; the `content` the model saw is the fallback for every shape not handled here.
-export function resultOutput(content: unknown, isError: boolean, toolUseResult: unknown): Output {
-  if (isError || !isObject(toolUseResult))
+// Bash call; a subagent's results come without it, so it is rebuilt from the call. The `content` the
+// model saw is the fallback for every shape not handled here.
+export function resultOutput(
+  content: unknown,
+  isError: boolean,
+  toolUseResult: unknown,
+  call: ToolCall,
+): Output {
+  const result = toolUseResult ?? rebuiltResult(call, content);
+  if (isError || !isObject(result))
     return { lines: toLines(contentText(content), isError ? "error" : "plain") };
-  const diff = diffOutput(toolUseResult);
+  const diff = diffOutput(result);
   if (diff) return diff;
-  const read = readOutput(toolUseResult);
+  const read = readOutput(result);
   if (read) return read;
-  if (isBashOutput(toolUseResult) && (toolUseResult.stdout !== "" || toolUseResult.stderr !== "")) {
+  if (isBashOutput(result) && (result.stdout !== "" || result.stderr !== "")) {
     return {
-      lines: [
-        ...toLines(toolUseResult.stdout, "plain"),
-        ...toLines(toolUseResult.stderr, "stderr"),
-      ],
+      lines: [...toLines(result.stdout, "plain"), ...toLines(result.stderr, "stderr")],
     };
   }
   return { lines: toLines(contentText(content), "plain") };
 }
 
+// What `tool_use_result` would hold, from the call's input and the text the model saw. A Read and a
+// Write that creates a file are exact. An Edit, or a Write over a file, is its old and new text as
+// removed and added lines, with no line numbers or context: those need the old file.
+function rebuiltResult({ name, input }: ToolCall, content: unknown): Json | undefined {
+  if (!isObject(input) || typeof input.file_path !== "string" || typeof content !== "string")
+    return undefined;
+  const filePath = input.file_path;
+  if (name === "Read") {
+    const file = numberedFile(content);
+    return file && { type: "text", file: { filePath, ...file } };
+  }
+  if (name === "Write" && typeof input.content === "string") {
+    return content.startsWith("File created successfully")
+      ? { type: "create", filePath, content: input.content, structuredPatch: [] }
+      : { filePath, structuredPatch: [{ lines: marked("+", input.content) }] };
+  }
+  if (
+    name === "Edit" &&
+    typeof input.old_string === "string" &&
+    typeof input.new_string === "string"
+  )
+    return {
+      filePath,
+      structuredPatch: [
+        { lines: [...marked("-", input.old_string), ...marked("+", input.new_string)] },
+      ],
+    };
+  return undefined;
+}
+
+// A Read's text as the tool numbers it: a number and a tab before each line. Undefined for any other
+// text, such as the note on an empty file.
+function numberedFile(text: string): { content: string; startLine: number } | undefined {
+  const code: string[] = [];
+  let startLine = 0;
+  for (const line of text.split("\n")) {
+    const number = /^(\d+)\t/.exec(line);
+    if (number === null) return undefined;
+    if (code.length === 0) startLine = Number(number[1]);
+    else if (Number(number[1]) !== startLine + code.length) return undefined;
+    code.push(line.slice(number[0].length));
+  }
+  return { content: code.join("\n"), startLine };
+}
+
+// A string's lines as a patch holds them, each behind `marker`.
+const marked = (marker: string, text: string): string[] =>
+  text === "" ? [] : splitLines(text.replace(/\r?\n$/, "")).map((line) => `${marker}${line}`);
+
 function isBashOutput(value: Json): value is Json & Pick<BashOutput, "stdout" | "stderr"> {
   return typeof value.stdout === "string" && typeof value.stderr === "string";
 }
 
-type Patch = FileEditOutput["structuredPatch"][number];
+type NumberedPatch = FileEditOutput["structuredPatch"][number];
+// A hunk, whose line numbers a patch rebuilt from a call does not have.
+type Patch = Pick<NumberedPatch, "lines"> & Partial<NumberedPatch>;
 
 function isPatch(value: unknown): value is Patch {
   return (
     isObject(value) &&
-    typeof value.oldStart === "number" &&
-    typeof value.oldLines === "number" &&
-    typeof value.newStart === "number" &&
-    typeof value.newLines === "number" &&
     Array.isArray(value.lines) &&
     value.lines.every((line) => typeof line === "string")
+  );
+}
+
+function isNumbered(patch: Patch): patch is NumberedPatch {
+  return [patch.oldStart, patch.oldLines, patch.newStart, patch.newLines].every(
+    (value) => typeof value === "number",
   );
 }
 
@@ -163,10 +226,11 @@ function diffOutput(result: Json): Output | undefined {
     });
   }
   for (const patch of patches) {
-    lines.push({
-      text: `@@ -${patch.oldStart},${patch.oldLines} +${patch.newStart},${patch.newLines} @@`,
-      tone: "hunk",
-    });
+    if (isNumbered(patch))
+      lines.push({
+        text: `@@ -${patch.oldStart},${patch.oldLines} +${patch.newStart},${patch.newLines} @@`,
+        tone: "hunk",
+      });
     lines.push(...hunkLines(patch.lines, language));
   }
   const changed = lines.filter((line) => line.tone === "added" || line.tone === "removed");
