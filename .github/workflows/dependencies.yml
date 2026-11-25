@@ -44,6 +44,7 @@ jobs:
       pull-requests: write
     outputs:
       base: ${{ steps.moved.outputs.base }}
+      pr: ${{ steps.moved.outputs.pr }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -57,7 +58,8 @@ jobs:
         run: |
           set -euo pipefail
           base=$(git merge-base HEAD origin/main)
-          echo "base=$base" >>"$GITHUB_OUTPUT"
+          pr=$(gh pr list --head "$GITHUB_REF_NAME" --state open --json number --jq '.[0].number // empty')
+          printf 'base=%s\npr=%s\n' "$base" "$pr" >>"$GITHUB_OUTPUT"
           mkdir -p "$RUNNER_TEMP/checks"
           bash .github/scripts/what-moved.sh "$base" HEAD >"$RUNNER_TEMP/checks/moved.md"
           bash .github/scripts/dependency-note.sh compose reviewing "$RUNNER_TEMP/checks" |
@@ -195,6 +197,7 @@ jobs:
           path: |
             ${{ runner.temp }}/canary/canary.md
             ${{ runner.temp }}/canary/stream.jsonl
+            ${{ runner.temp }}/canary/rendered.log
 
   wrapper:
     needs: moved
@@ -202,9 +205,127 @@ jobs:
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
+  # The merge base's Claude Code, not the one under review (swissconn-workspace #1339); it holds no token
+  # that can write, and leaves its note and follow-ups as files (.claude/skills/dependency-review)
+  review:
+    name: The review
+    needs: [moved, types, canary, wrapper]
+    if: ${{ !cancelled() && needs.moved.result == 'success' }}
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    # Setup 5, research 30, the note 15
+    timeout-minutes: 50
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+      pull-requests: read
+    env:
+      PR: ${{ needs.moved.outputs.pr }}
+      RUN_ID: ${{ github.run_id }}
+      GH_TOKEN: ${{ github.token }}
+      # A command that reaches its timeout stops, instead of holding the step to its limit in the background
+      CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
+      CLAUDE_FLAGS: >-
+        --model opus --effort high --settings .github/agent-settings.json --output-format stream-json --verbose
+    steps:
+      # Outside the checkout, which the agent must leave as it found it
+      - name: Where the checks and the review are
+        run: printf 'CHECKS=%s\nREVIEW=%s\n' "$RUNNER_TEMP/checks" "$RUNNER_TEMP/review" >>"$GITHUB_ENV"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the merge base
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: ${{ runner.temp }}/checks
+          merge-multiple: true
+      - name: The wrapper's line, and the merge base's Claude Code
+        env:
+          BASE: ${{ needs.moved.outputs.base }}
+          WRAPPER: ${{ needs.wrapper.result }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          mkdir -p "$REVIEW"
+          bash .github/scripts/wrapper-line.sh "$WRAPPER" "$RUN" >"$CHECKS/wrapper.md"
+          echo "CLAUDE=$(bash .github/scripts/install-claude.sh "$BASE")" >>"$GITHUB_ENV"
+      - uses: SwissConnection/render-agent-log@v0
+
+      # Out of turns or time, it still leaves what it found for the write
+      - name: Research
+        id: research
+        continue-on-error: true
+        timeout-minutes: 30
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          session=$(cat /proc/sys/kernel/random/uuid)
+          echo "session=$session" >>"$GITHUB_OUTPUT"
+          read -ra flags <<<"$CLAUDE_FLAGS"
+          "$CLAUDE" -p "/dependency-review research" --session-id "$session" --max-turns 80 "${flags[@]}" |
+            render-agent-log
+
+      # The same session, resumed: everything the research found is in its context
+      - name: Write
+        if: ${{ !cancelled() && steps.research.outputs.session != '' }}
+        timeout-minutes: 15
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          SESSION: ${{ steps.research.outputs.session }}
+        run: |
+          set -euo pipefail
+          read -ra flags <<<"$CLAUDE_FLAGS"
+          "$CLAUDE" -p "/dependency-review write" --resume "$SESSION" --max-turns 40 "${flags[@]}" | render-agent-log
+          test -s "$REVIEW/note.md"
+
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: review
+          path: ${{ runner.temp }}/review/
+          if-no-files-found: ignore
+
+  # Its own job, so the agent never holds a token that can write
+  followups:
+    name: The follow-ups
+    needs: [moved, review]
+    if: ${{ !cancelled() && needs.review.result == 'success' && needs.moved.outputs.pr != '' }}
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: review
+          path: ${{ runner.temp }}/review
+      - name: File them
+        id: file
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ needs.moved.outputs.pr }}
+        run: bash .github/scripts/file-followups.sh "$RUNNER_TEMP/review" "$PR"
+      # Also after a failure part way: what was filed keeps its number in the note
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: numbers
+          path: ${{ runner.temp }}/review/numbers.txt
+
   note:
     name: The note
-    needs: [moved, types, canary, wrapper]
+    needs: [moved, types, canary, wrapper, review, followups]
     if: ${{ always() && needs.moved.result == 'success' }}
     runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
     timeout-minutes: 5
@@ -229,10 +350,8 @@ jobs:
         run: |
           set -euo pipefail
           checks=$RUNNER_TEMP/checks
-          action=$(grep -oE 'claude-code-action@[0-9a-f]+ # v[0-9.]+' .github/workflows/wrapper.yml | sed 's/.*# //')
-          if [[ $WRAPPER == success ]]; then
-            echo "✅ **The wrapper** in claude-code-action $action: every case as expected · [run]($RUN)"
-          else
-            echo "❌ **The wrapper** in claude-code-action $action: $WRAPPER · [run]($RUN)"
-          fi >"$checks/wrapper.md"
-          bash .github/scripts/dependency-note.sh compose incomplete "$checks" | bash .github/scripts/dependency-note.sh put
+          bash .github/scripts/wrapper-line.sh "$WRAPPER" "$RUN" >"$checks/wrapper.md"
+          mode=incomplete
+          [[ ! -s $checks/note.md ]] || mode=review
+          bash .github/scripts/dependency-note.sh compose "$mode" "$checks" "$checks" |
+            bash .github/scripts/dependency-note.sh put
