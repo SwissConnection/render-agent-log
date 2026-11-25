@@ -40,12 +40,16 @@ The issues here that produced clean PRs share a shape (#20, #21, #22, #27):
 1. **Name the anti-goal first**: the plausible-but-wrong outcome ("no behavior change; the goldens
    stay byte-identical").
 2. **State success as something checkable**: a golden file that does not change, a grep that finds
-   each rule once, zero annotations in the visual check.
+   each rule once, zero annotations in the visual check. Check it while implementing; a test that a
+   line deleted in the same PR stays deleted is no contract.
 3. **Give a decision rule, not a list**: "language by path, never by content: a wrong guess is worse
    than none" settles cases the issue did not foresee.
 4. **Tier the work** (do this / judgment call / don't chase) and say why the limit exists.
 5. **Name exemplars and anti-patterns by file.** "Write it well" transfers nothing.
-6. **Verify before asserting.** `wait $!` on a process substitution worked on macOS and in a
+6. **License design change, with a test for when and a limit.** The outcome sets the scope; within
+   it, the simplest correct model in our idioms, even when that reshapes the code it touches. A fix
+   an issue names is a starting point, not the design.
+7. **Verify before asserting.** `wait $!` on a process substitution worked on macOS and in a
    container and failed on CI (#31). Run it where it will run.
 
 ---
@@ -58,7 +62,10 @@ whatever they say, then the code. Ask:
 
 - Did the change **lift** what it touched, or level it down to match? Were nearby patterns imitated
   because they are good, or because they were nearby?
-- Are **removals** part of the deliverable, or is it all additions?
+- Are **removals** part of the deliverable, or is it all additions? Where a caller misfits an API,
+  was the caller changed, or did the API gain a second entry point, a wrapper or an option for it?
+- Where a dependency misbehaves (the SDK, an action, the runner), does the change make it work or
+  report it, or hide it behind a workaround?
 - Does each comment do a job the code cannot (§ 5), or is it prose to check against the code?
 - Does each test catch a **wrong answer**, or only a changed line (§ 5)?
 - Is each piece of knowledge stated in **one place**, with pointers elsewhere?
@@ -74,7 +81,10 @@ conversation, not another round.
 **Comments** have three jobs: *what* a unit is, in one line; a *gotcha* the code cannot show; *why*
 something that looks wrong is right. Delete the rest: a restated signature, a narrated change, an
 argued design. Rationale belongs in the PR or the issue; an issue number is a pointer, not a
-paragraph. Past three lines, a comment is usually a decision that belongs there instead.
+paragraph. Past three lines, a comment is usually a decision that belongs there instead. The *what*
+puts a reader in the right frame before they read the code: the unit's nature or its purpose, never
+the code retold, with no steps, order or formula the body already states. A removal or an absence is
+explained in the PR, never in a comment.
 
 **Tests** go where the alternative is a silent wrong answer, not a crash: a result under the wrong
 call, a command made live, an error shown as success, a highlighter that changed the text. Wiring
@@ -82,7 +92,7 @@ does not qualify; whatever runs it already fails loudly. A test that reads the f
 asserts on a literal from it catches a *changed* line, never a wrong one, and pins that line in
 place; `test/action.test.ts` used to do this with a regex on `action.yml`. The two exceptions that
 look alike and are not: a cross-file invariant neither file can state alone (§ 1), and a repo-wide
-lint.
+lint. Tests adapt to the code: no optional field, default or seam exists only for a test.
 
 **One home.** The spec is the contract and says what; the code says why, beside the line that
 needs it; AGENTS.md points. When the same sentence appears twice, one copy is already wrong or

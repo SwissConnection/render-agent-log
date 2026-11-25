@@ -91,6 +91,7 @@ nothing of it may reach `dist/`. highlight.js, with every language it has, is th
 - Open PRs as drafts unless asked otherwise. Never merge or approve your own PR without an explicit
   instruction to merge.
 - Squash merges only; the PR title becomes the commit subject.
+- Dependency bumps come only through Renovate's PR; never fold one into another PR.
 - **Alignment check**, by the author before a PR and on every push, and first thing by a reviewer:
   CI checks the commands; nothing checks that a change follows this file and
   [docs/craft.md](docs/craft.md). Read craft.md § The alignment check, then the diff: docs, comments
