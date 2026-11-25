@@ -1,0 +1,55 @@
+# Moves the prepared PRs built on a branch onto its new head after a push moved it
+# (.github/scripts/prepared-pr/restack.sh): Renovate rebuilds its branch whenever a version moves.
+name: Restack
+run-name: "Restack on ${{ inputs.branch }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: The branch that moved
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: restack-${{ inputs.branch }}
+  cancel-in-progress: false
+
+jobs:
+  restack:
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    environment:
+      name: ops
+      deployment: false
+    timeout-minutes: 10
+    permissions:
+      # Prepares again one that no longer applies
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Get the App's token
+        id: app
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          client-id: ${{ vars.SWISSCONN_OPS_CLIENT_ID }}
+          private-key: ${{ secrets.SWISSCONN_OPS_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+          # The new base moves workflow files
+          permission-workflows: write
+      - name: Restack
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          DISPATCH_TOKEN: ${{ github.token }}
+          BOT: ${{ steps.app.outputs.app-slug }}[bot]
+          BRANCH: ${{ inputs.branch }}
+        run: bash .github/scripts/prepared-pr/restack.sh "$BRANCH"

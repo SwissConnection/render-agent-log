@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # The dependency PR's note (dependencies.yml), the part of its description a reader sees.
 # Usage: dependency-note.sh compose <reviewing|incomplete|review> <checks dir> [<review dir>] | put [<pr>]
+#        dependency-note.sh number <numbers.txt> < text
 set -euo pipefail
 # Renovate's fingerprint of the description stops at this line, so Renovate leaves what follows alone
 marker='<!-- Reviewable:start -->'
@@ -36,10 +37,13 @@ review() {
       "<!-- checks -->") checks "$dir" "❌ no result" ;;
       *) echo "$line" ;;
     esac
-  done <"$review/note.md" |
-    # F1 names a follow-up until it is filed; numbers.txt maps it to its issue
-    perl -pe 'BEGIN { my $file = shift; if (open(my $f, "<", $file)) { %n = map { split } <$f> } }
-      s/(#|%23)(F\d+)\b/exists $n{$2} ? "$1$n{$2}" : "$1$2"/ge' "$review/numbers.txt"
+  done <"$review/note.md" | number "$review/numbers.txt"
+}
+
+# F1 names a follow-up until it is filed; numbers.txt maps it to its issue, "F1 52" per line
+number() {
+  perl -pe 'BEGIN { my $file = shift; if (open(my $f, "<", $file)) { %n = map { split } <$f> } }
+    s/(?:(?<=%23)|\b)(F\d+)\b/exists $n{$1} ? $n{$1} : $1/ge' "$1"
 }
 
 compose() {
@@ -81,5 +85,6 @@ put() {
 case $1 in
   compose) compose "$2" "$3" "${4:-}" ;;
   put) put "${2:-}" ;;
+  number) number "$2" ;;
   *) echo "usage: $0 compose <reviewing|incomplete> <dir> | compose review <dir> <review dir> | put [<pr>]" >&2 && exit 2 ;;
 esac

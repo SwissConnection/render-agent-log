@@ -29,7 +29,9 @@ jobs:
       - env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh workflow run dependencies.yml --ref "$GITHUB_REF_NAME"
+        run: |
+          gh workflow run dependencies.yml --ref "$GITHUB_REF_NAME"
+          gh workflow run restack.yml --ref main -f branch="$GITHUB_REF_NAME"
 
   moved:
     name: What moved
@@ -286,10 +288,10 @@ jobs:
           if-no-files-found: ignore
 
   # Its own job, so the agent never holds a token that can write
-  followups:
-    name: The follow-ups
-    needs: [moved, review]
-    if: ${{ !cancelled() && needs.review.result == 'success' }}
+  note:
+    name: The follow-ups and the note
+    needs: [moved, types, canary, wrapper, review]
+    if: ${{ always() && needs.moved.result == 'success' }}
     runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
     timeout-minutes: 5
     permissions:
@@ -297,39 +299,6 @@ jobs:
       actions: write
       contents: read
       issues: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          sparse-checkout: .github/scripts
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: review
-          path: ${{ runner.temp }}/review
-      - name: File them
-        id: file
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        # Renovate may have opened the PR only after the run began
-        run: |
-          pr=$(gh pr list --head "$GITHUB_REF_NAME" --state open --json number --jq '.[0].number // empty')
-          [[ -z $pr ]] || bash .github/scripts/file-followups.sh "$RUNNER_TEMP/review" "$pr"
-      # Also after a failure part way: what was filed keeps its number in the note
-      - if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: numbers
-          path: ${{ runner.temp }}/review/numbers.txt
-
-  note:
-    name: The note
-    needs: [moved, types, canary, wrapper, review, followups]
-    if: ${{ always() && needs.moved.result == 'success' }}
-    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
-    timeout-minutes: 5
-    permissions:
-      contents: read
       pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -340,7 +309,7 @@ jobs:
         with:
           path: ${{ runner.temp }}/checks
           merge-multiple: true
-      - name: Write it
+      - name: File the follow-ups, and write the note
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -351,6 +320,11 @@ jobs:
           checks=$RUNNER_TEMP/checks
           bash .github/scripts/wrapper-line.sh "$WRAPPER" "$RUN" >"$checks/wrapper.md"
           mode=incomplete
-          [[ ! -s $checks/note.md ]] || mode=review
+          if [[ -s $checks/note.md ]]; then
+            mode=review
+            # Renovate may have opened the PR only after the run began
+            pr=$(gh pr list --head "$GITHUB_REF_NAME" --state open --json number --jq '.[0].number // empty')
+            [[ -z $pr ]] || bash .github/scripts/file-followups.sh "$checks" "$pr"
+          fi
           bash .github/scripts/dependency-note.sh compose "$mode" "$checks" "$checks" |
             bash .github/scripts/dependency-note.sh put

@@ -21,8 +21,7 @@ jq -c '.[]' "$review/followups.json" | while IFS= read -r followup; do
   labels=(--label dependencies)
   [[ $(jq -r .prepared <<<"$followup") != true ]] || labels+=(--label prepared-pr)
   [[ $(jq -r .bug <<<"$followup") != true ]] || labels+=(--label bug)
-  branch=$(jq -r .branch <<<"$followup" | perl -pe 'BEGIN { open(my $f, "<", shift); %n = map { split } <$f> }
-    s/\b(F\d+)\b/exists $n{$1} ? $n{$1} : $1/ge' "$review/numbers.txt")
+  branch=$(jq -r .branch <<<"$followup" | bash "$(dirname "$0")/dependency-note.sh" number "$review/numbers.txt")
   body="$(jq -r .body <<<"$followup")
 
 From the dependency review of #$pr.

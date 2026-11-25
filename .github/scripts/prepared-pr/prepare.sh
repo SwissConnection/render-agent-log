@@ -3,7 +3,6 @@
 # answer and one re-review, into $RUNNER_TEMP/followup. Exits non-zero, saving nothing, when Claude fails.
 set -uo pipefail
 
-FIX_UP_ROUNDS=3
 # The agent's time, out of the job's: running out of it tells itself apart from Claude failing
 AGENT_SECONDS=3600
 # A review round's: a guard against a hang, not a limit on the review
@@ -75,25 +74,9 @@ ask() {
   fi
 }
 
-# Until the check passes, in up to FIX_UP_ROUNDS rounds; fails when it still refuses or the agent said no.
 settle() {
-  local round why last=""
-  for ((round = 1; ; round++)); do
-    save
-    precheck && return 0
-    if agent_said_no || ((round > FIX_UP_ROUNDS)); then
-      return 1
-    fi
-    why=$(<"${check}/why.md")
-    # The same reason again: the agent kept its change, so the fix needs what the check refuses
-    [[ "${why}" != "${last}" ]] || return 1
-    last="${why}"
-
-    echo "::notice::The check before the PR, round ${round}: ${why}"
-    # A round cut short keeps the change from before it, which the publish job's check refuses again
-    ask "$(fix_up_prompt "${why}")" --resume "${session}" --max-turns 30 || return 1
-    [[ -z "${stopped}" ]] || return 1
-  done
+  save
+  precheck
 }
 
 # Review round $1, prompt $2, with claude's other flags: the review's text in review-$1.md, the JSON it ends
@@ -147,13 +130,6 @@ The author has answered your review, in \`${followup}/answer.md\`. \`git diff HE
 EOF
 }
 
-fix_up_prompt() {
-  cat <<EOF
-Before its draft PR opens, the check refuses what you left: $1
-If that is a slip, fix it: the change stays in the working tree, uncommitted, and its title and description in \`${followup}/pr.md\`. If the fix needs what it refuses, leave everything as it is and end.
-EOF
-}
-
 save() {
   git add -A
   git diff --cached --binary "${BASE_SHA:?}" >"${followup}/change.patch"
@@ -174,10 +150,6 @@ precheck() {
   git worktree remove --force "${tree}"
   grep -qx "refused=true" "${output}" && status=1
   return "${status}"
-}
-
-agent_said_no() {
-  [[ ! -s "${followup}/change.patch" && -n "$(head -n 1 "${followup}/pr.md" 2>/dev/null)" ]]
 }
 
 main "$@"

@@ -64,7 +64,7 @@ committed: the release builds it, and a workflow that runs `uses: ./` builds it 
 Renovate (`renovate.yml`) keeps one dependency PR on the newest versions, daily. `dependencies.yml`
 checks it and has an agent review it (`.claude/skills/dependency-review`, `/dependency-review` locally);
 each follow-up it labels `prepared-pr` arrives as a draft PR (`prepared-pr.yml`, which also takes an
-issue number by hand on `main`).
+issue number by hand on `main`), and `restack.yml` keeps those built on its branch on its newest head.
 
 CI (`.github/workflows/ci.yml`) runs all but `fix`. The SDK is imported with `import type` only;
 nothing of it may reach `dist/`. highlight.js, with every language it has, is the one runtime dependency and most of

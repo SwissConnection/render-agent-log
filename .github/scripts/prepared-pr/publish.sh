@@ -120,6 +120,7 @@ case "${cmd}" in
   open)
     branch="prepared-pr/${ISSUE:?}"
     title=$(head -n 1 "${dir}/pr.md")
+    base_sha=$(git rev-parse HEAD)
     # The review's text goes up as the App's: no mention that starts an agent run
     for f in "${dir}"/review-*.md; do [[ ! -e "${f}" ]] || sed -i 's/@claude/claude/gI' "${f}"; done
     if [[ -s "${dir}/before-review.patch" ]]; then
@@ -142,9 +143,17 @@ case "${cmd}" in
       review_head
       printf 'Closes #%s\n' "${ISSUE}"
       tail -n +2 "${dir}/pr.md"
+      # Where restack.sh moves it from when its base moves
+      printf '\n<!-- base: %s -->\n' "${base_sha}"
     } >"${RUNNER_TEMP}/body.md"
-    pr=$(gh pr create --draft --base "${BASE:?}" --head "${branch}" --title "${title}" \
-      --body-file "${RUNNER_TEMP}/body.md" ${MILESTONE:+--milestone "${MILESTONE}"})
+    # Prepared again, as restack.sh does when its base moved under it: the same PR, with the new change
+    pr=$(gh pr list --head "${branch}" --state open --json url --jq '.[0].url // empty')
+    if [[ -n ${pr} ]]; then
+      gh pr edit "${pr}" --title "${title}" --body-file "${RUNNER_TEMP}/body.md" >/dev/null
+    else
+      pr=$(gh pr create --draft --base "${BASE:?}" --head "${branch}" --title "${title}" \
+        --body-file "${RUNNER_TEMP}/body.md" ${MILESTONE:+--milestone "${MILESTONE}"})
+    fi
     echo "${pr}"
     echo "pr=${pr}" >>"${GITHUB_OUTPUT}"
     [[ "${BASE}" == main ]] || stack_on "${BASE}" "${pr}"
