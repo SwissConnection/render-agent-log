@@ -20,7 +20,7 @@
     },
   ],
 
-  // dependencies.yml writes its checks below Renovate's part, where Renovate's fingerprint stops.
-  prBodyTemplate: "{{{table}}}{{{warnings}}}{{{controls}}}",
+  // The note (dependencies.yml) is the description a reader sees; Renovate shows only its warnings.
+  prBodyTemplate: "<!-- dependencies.yml writes this description (.github/scripts/dependency-note.sh). -->{{{warnings}}}",
   fetchChangeLogs: "off",
 }

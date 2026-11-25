@@ -62,8 +62,9 @@ minor when a merged PR has the `minor` label. Never push a release tag by hand. 
 committed: the release builds it, and a workflow that runs `uses: ./` builds it first.
 
 Renovate (`renovate.yml`, `.github/renovate.json5`) keeps one PR with every dependency on the newest
-versions, daily. `dependencies.yml` writes its checks into that PR's description: the SDK's type
-diff, a real run of the new Claude Code through the branch's renderer, and the wrapper's live checks.
+versions, daily. `dependencies.yml` writes its note, the description a reader sees: what moved, the
+typecheck against the new SDK, a real run of the new Claude Code through the branch's renderer, and
+the wrapper's live checks (`.github/scripts/dependency-note.sh`).
 
 CI (`.github/workflows/ci.yml`) runs all but `fix`. The SDK is imported with `import type` only;
 nothing of it may reach `dist/`. highlight.js, with every language it has, is the one runtime dependency and most of
