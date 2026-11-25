@@ -21,7 +21,7 @@ concurrency:
 jobs:
   prepare:
     name: Prepare
-    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    runs-on: ubuntu-26.04 # ubuntu-latest adds a label-migration notice to every run summary
     # Setup 5, the agent 60, the review's two rounds 20 each
     timeout-minutes: 110
     permissions:
@@ -71,7 +71,7 @@ jobs:
             run-scripts/.github/agent-settings.json "$RUNNER_TEMP/scripts/"
           rm -rf run-scripts
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
           cache: npm
@@ -102,7 +102,7 @@ jobs:
 
       # Not after a Claude that failed to run: its issue keeps the label for the next try
       - name: Upload the change
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: followup
           path: ${{ runner.temp }}/followup/
@@ -112,7 +112,7 @@ jobs:
     name: Open the PR
     needs: prepare
     # A fresh runner: the agent could have changed git or tools a later step in its job would use
-    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    runs-on: ubuntu-26.04 # ubuntu-latest adds a label-migration notice to every run summary
     environment:
       name: ops
       deployment: false

@@ -21,7 +21,7 @@ jobs:
   dispatch:
     name: Start as a dispatch
     if: github.event_name == 'push'
-    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    runs-on: ubuntu-26.04 # ubuntu-latest adds a label-migration notice to every run summary
     timeout-minutes: 5
     permissions:
       actions: write
@@ -36,7 +36,7 @@ jobs:
   moved:
     name: What moved
     if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    runs-on: ubuntu-26.04 # ubuntu-latest adds a label-migration notice to every run summary
     timeout-minutes: 5
     permissions:
       contents: read
@@ -63,7 +63,7 @@ jobs:
           bash .github/scripts/what-moved.sh "$base" HEAD >"$RUNNER_TEMP/checks/moved.md"
           bash .github/scripts/dependency-note.sh compose reviewing "$RUNNER_TEMP/checks" |
             bash .github/scripts/dependency-note.sh put
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: moved
           path: ${{ runner.temp }}/checks/moved.md
@@ -71,14 +71,14 @@ jobs:
   types:
     name: Typecheck
     needs: moved
-    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    runs-on: ubuntu-26.04 # ubuntu-latest adds a label-migration notice to every run summary
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # the merge base
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
           cache: npm
@@ -125,7 +125,7 @@ jobs:
             } >"$out/diff.md"
           fi
           cat "$out/typecheck.md"
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: types
           path: ${{ runner.temp }}/types/
@@ -133,13 +133,13 @@ jobs:
   canary:
     name: A real run
     needs: moved
-    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    runs-on: ubuntu-26.04 # ubuntu-latest adds a label-migration notice to every run summary
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
           cache: npm
@@ -189,7 +189,7 @@ jobs:
           [[ $line == ✅* ]]
 
       - if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: canary
           path: |
@@ -208,7 +208,7 @@ jobs:
     name: The review
     needs: [moved, types, canary, wrapper]
     if: ${{ !cancelled() && needs.moved.result == 'success' }}
-    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    runs-on: ubuntu-26.04 # ubuntu-latest adds a label-migration notice to every run summary
     # Setup 5, research 30, the note 15
     timeout-minutes: 50
     permissions:
@@ -232,7 +232,7 @@ jobs:
         with:
           fetch-depth: 0 # the merge base
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
           cache: npm
@@ -281,7 +281,7 @@ jobs:
           test -s "$REVIEW/note.md"
 
       - if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: review
           path: ${{ runner.temp }}/review/
@@ -292,7 +292,7 @@ jobs:
     name: The follow-ups and the note
     needs: [moved, types, canary, wrapper, review]
     if: ${{ always() && needs.moved.result == 'success' }}
-    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    runs-on: ubuntu-26.04 # ubuntu-latest adds a label-migration notice to every run summary
     timeout-minutes: 5
     permissions:
       # Starts each follow-up's prepared PR
