@@ -83,7 +83,10 @@ put() {
 }
 
 case $1 in
-  compose) compose "$2" "$3" "${4:-}" ;;
+  compose)
+    compose "$2" "$3" "${4:-}"
+    printf '\n<sub>To rebuild this PR on the latest <code>main</code>, add the <code>rebase</code> label.</sub>\n'
+    ;;
   put) put "${2:-}" ;;
   number) number "$2" ;;
   *) echo "usage: $0 compose <reviewing|incomplete> <dir> | compose review <dir> <review dir> | put [<pr>]" >&2 && exit 2 ;;

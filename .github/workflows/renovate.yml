@@ -1,11 +1,15 @@
 # Self-hosted Renovate (.github/renovate.json5), as the org's App swissconn-ops. Its key is in the ops
-# environment, which only main can use, so only this schedule or a dispatch on main reaches it.
+# environment, which only main can use, so only main's copy of this file reaches it.
 name: Renovate
 
 on:
   schedule:
     - cron: "23 4 * * *"
   workflow_dispatch:
+  # The `rebase` label on its PR, which Renovate takes off once it has rebuilt the branch. Runs main's copy
+  # of this file, never the PR's code
+  pull_request_target:
+    types: [labeled]
 
 permissions:
   contents: read
@@ -17,6 +21,10 @@ concurrency:
 
 jobs:
   renovate:
+    if: >-
+      github.event_name != 'pull_request_target' ||
+      (github.event.label.name == 'rebase' && startsWith(github.event.pull_request.head.ref, 'renovate/') &&
+       github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
     environment:
       name: ops
