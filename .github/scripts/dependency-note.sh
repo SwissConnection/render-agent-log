@@ -85,6 +85,8 @@ put() {
 case $1 in
   compose)
     compose "$2" "$3" "${4:-}"
+    # Links the PR to its parent issue (file-followups.sh), so the board moves the parent with it
+    if [[ -s ${4:-}/parent.txt ]]; then printf '\nCloses #%s\n' "$(<"$4/parent.txt")"; fi
     printf '\n<sub>To rebuild this PR on the latest <code>main</code>, add the <code>rebase</code> label.</sub>\n'
     ;;
   put) put "${2:-}" ;;

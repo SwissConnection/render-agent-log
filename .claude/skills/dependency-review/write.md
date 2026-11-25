@@ -40,8 +40,8 @@ open question or a scope that could grow. Dedupe first, closed issues included
 ]
 ```
 
-`branch` is the branch it builds on, by the table: `main`, this PR's `headRefName`, or `prepared-pr/F1`;
-the job ends the issue with it. `why_not` is a few words when `prepared` is false. `bug` is true for an existing bug. With `existing`
+The job ends each body with the PR it came from and its branch; write neither. `branch` is the branch it
+builds on, by the table: `main`, this PR's `headRefName`, or `prepared-pr/F1`. `why_not` is a few words when `prepared` is false. `bug` is true for an existing bug. With `existing`
 set to an issue number, nothing is filed and that issue is linked. An empty list is `[]`.
 
 In the note, a follow-up is `#F1`; the job filing it puts its number in its place.
