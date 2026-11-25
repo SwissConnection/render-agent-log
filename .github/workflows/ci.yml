@@ -29,8 +29,5 @@ jobs:
         run: npm run typecheck
       - name: Lint and format check
         run: npx biome ci
-      # The wrapper's tests run the built renderer.
-      - name: Build
-        run: npm run build
       - name: Test
         run: npm test

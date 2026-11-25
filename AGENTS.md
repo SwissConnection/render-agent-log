@@ -47,7 +47,7 @@ Node 24 (the Action's runtime), npm. `npm ci` after cloning.
 | `npm run typecheck` | `tsc` over `src/` and `test/`, no emit |
 | `npm run lint` | Biome: lint, format and import order, read-only |
 | `npm run fix` | Biome: apply the safe fixes and format |
-| `npm test` | Vitest, once |
+| `npm test` | Builds, then Vitest once (the wrapper's tests run the built renderer) |
 | `npm run build` | esbuild bundles the CLI (`src/index.ts`) and the Action (`src/action.ts`) to `dist/`, sharing `dist/chunk.js` |
 
 `node src/index.ts fixtures/claude/<name>.jsonl` renders a fixture in the terminal. The golden files
@@ -55,7 +55,7 @@ in `test/golden/` hold each fixture's rendering; `npx vitest run -u` rewrites th
 
 The wrapper (`wrapper/claude-wrapper`) reaches the log through `/proc`, so its tests run on Linux only.
 On macOS, run them in a container: copy the tree without `node_modules` into `node:24-bookworm`, then
-`npm ci && npx vitest run test/wrapper.test.ts`.
+`npm ci && npm test -- test/wrapper.test.ts`.
 
 Releases are cut by `release.yml` on each push to `main` that changes what users run: a patch, or a
 minor when a merged PR has the `minor` label. Never push a release tag by hand. `dist/` is not
