@@ -26,6 +26,16 @@ jobs:
           node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
           cache: npm
       - run: npm ci && npm run build
+      - name: "UX #73: today"
+        run: bash ux/samples.sh today
+      - name: "UX #73: neutral"
+        run: bash ux/samples.sh neutral
+      - name: "UX #73: neutral-magenta"
+        run: bash ux/samples.sh neutral-magenta
+      - name: "UX #73: neutral-red"
+        run: bash ux/samples.sh neutral-red
+      - name: "UX #73: neutral-brightyellow"
+        run: bash ux/samples.sh neutral-brightyellow
       - name: Set up the live modes
         uses: ./
       - name: edit-and-bash
