@@ -11,7 +11,7 @@ It works live, while the agent runs, or on a finished run.
 </picture>
 
 That is Claude fixing a failing test in [`demo/`](demo/), inside `claude-code-action`. You can check
-out the log above [in this run](https://github.com/SwissConnection/render-agent-log/actions/runs/36433710396/job/108966118283#step:4:279).
+out the log above [in this run](https://github.com/SwissConnection/render-agent-log/actions/runs/45712489381/job/139550170967#step:6:282).
 [`demo.yml`](.github/workflows/demo.yml) is the whole workflow.
 
 ---
@@ -58,7 +58,7 @@ and the whole run in 27 lines, with each tool's full output one click away.
 On a Linux runner, add one step before `claude-code-action` and pass its `wrapper` output on:
 
 ```yaml
-- uses: SwissConnection/render-agent-log@v0
+- uses: SwissConnection/render-agent-log@v1
   id: render
 
 - uses: anthropics/claude-code-action@v1
@@ -73,7 +73,7 @@ The run now renders in the log of the `claude-code-action` step as it happens. L
 run's result as JSON after the `✻` summary line; that comes from the action itself, and
 render-agent-log can't suppress it.
 
-Pin the Action to a release: `@v0` follows the latest `v0.x.y`, and a release's commit SHA fixes it.
+Pin the Action to a release: `@v1` follows the latest `v1.x.y`, and a release's commit SHA fixes it.
 `@main` does not work, since only a release holds the built Action.
 
 ---
@@ -118,7 +118,7 @@ for every later step of the job, so a `claude-code-action` step after it runs th
 a later setup step without the input does not undo it:
 
 ```yaml
-- uses: SwissConnection/render-agent-log@v0
+- uses: SwissConnection/render-agent-log@v1
   id: render
   with:
     claude: scripts/claude # your claude, or a script that runs it
@@ -131,7 +131,7 @@ a later setup step without the input does not undo it:
 **CLI.** If you run `claude -p` yourself, the stream is already on standard output. Pipe it through:
 
 ```yaml
-- uses: SwissConnection/render-agent-log@v0
+- uses: SwissConnection/render-agent-log@v1
 
 - shell: bash # adds pipefail, so the step fails when claude does
   run: claude -p "…" --output-format stream-json --verbose | render-agent-log
@@ -150,7 +150,7 @@ file in a later step. You see the log only after the run, but it needs nothing f
     claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
     prompt: …
 
-- uses: SwissConnection/render-agent-log@v0
+- uses: SwissConnection/render-agent-log@v1
   if: always() && steps.claude.outputs.execution_file != ''
   with:
     execution-file: ${{ steps.claude.outputs.execution_file }}
@@ -165,7 +165,7 @@ Each screenshot links to the line in the run it came from.
 
 **Full output, folded.** Each call shows its first three lines; the rest is one click away. An edit
 shows the changed lines, and the fold holds the whole diff.
-([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36433710396/job/108966118283#step:4:368))
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/45712489381/job/139550170967#step:6:376))
 
 <img alt="An Edit call with its changed lines, and the expanded fold holding the full diff" src="docs/images/fold-diff.png" width="640">
 
@@ -173,7 +173,7 @@ shows the changed lines, and the fold holds the whole diff.
 name, in any of the [190-odd languages](https://github.com/highlightjs/highlight.js/blob/main/SUPPORTED_LANGUAGES.md)
 highlight.js knows. A diff keeps its changed lines red and green whole and highlights the code
 around them. Output that Claude prints with `cat` is not a file read, so it stays plain.
-([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36419296891/job/108917882109#step:4:336))
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/45712489381/job/139550170967#step:6:332))
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/highlighting-dark.png">
@@ -183,25 +183,25 @@ around them. Output that Claude prints with `cat` is not a file read, so it stay
 **Subagents.** A subagent's calls sit under the Agent call that started it, one `│` per level. When
 subagents run in the background and their messages interleave, each line still lands under its own
 Agent call, and a tool result always sits under its own call.
-([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36433482518/job/108965348196#step:7:7))
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/45712273183/job/139549433247#step:9:7))
 
 <img alt="An Agent call with the subagent's Grep and Glob calls nested under it" src="docs/images/subagent.png" width="760">
 
 **Failures.** Failed tool calls and a run that ends in an error are red, with the reason under the
 summary line.
-([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36433482518/job/108965348196#step:10:7))
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/45712273183/job/139549433247#step:13:7))
 
 <img alt="A run that hit its turn limit: the summary line in red with the error under it" src="docs/images/max-turns.png" width="640">
 
 **Tool output can't issue workflow commands.** GitHub runs any log line that starts with `::`, so a
 changelog, a web page or a test that prints `::error::` or `::add-mask::` would otherwise add
 annotations or hide text in your log. Here they print as text.
-([run](https://github.com/SwissConnection/render-agent-log/actions/runs/36433482518/job/108965348196#step:13:11))
+([run](https://github.com/SwissConnection/render-agent-log/actions/runs/45712273183/job/139549433247#step:16:11))
 
 <img alt="Tool output containing ::error:: and ::add-mask:: lines, shown as plain text" src="docs/images/hostile-output.png" width="640">
 
 The visual check renders every fixture the tests use, on every change to `main`.
-[Its run for this release](https://github.com/SwissConnection/render-agent-log/actions/runs/36433482518/job/108965348196)
+[Its run for this release](https://github.com/SwissConnection/render-agent-log/actions/runs/45712273183/job/139549433247)
 shows the rest: parallel calls whose results come back out of order, thinking, and an execution file.
 
 ---
@@ -261,7 +261,8 @@ closes the group, so the action's own `::error::` lines still become annotations
   update can break the live rendering. If the action starts `claude` some other way, the wrapper
   warns and runs it unrendered; if the action stops shipping `claude` where the wrapper looks for it,
   the step fails with an error naming the path.
-- **`v0.x`.** Inputs and output may still change before `v1`.
+- **`v1`.** Its inputs and outputs stay as they are within `v1`; a change that breaks them is `v2`.
+  The log itself keeps improving in minor and patch releases.
 
 The design is in [docs/spec.md](docs/spec.md). To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
