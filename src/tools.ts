@@ -11,7 +11,7 @@ import { cleanLine, cleanLines, oneLine } from "./text.ts";
 // (`unknown` in the SDK), so every shape is checked before use.
 
 // A line of tool output and how it is colored. `plain` keeps the tool's own colors.
-export type Tone = "plain" | "error" | "stderr" | "added" | "removed" | "hunk";
+export type Tone = "plain" | "error" | "stderr" | "denied" | "added" | "removed" | "hunk";
 export interface OutputLine {
   text: string;
   tone: Tone;
@@ -74,6 +74,13 @@ export function contentText(content: unknown): string {
 
 const toLines = (text: string, tone: Tone): OutputLine[] =>
   cleanLines(text, true).map((line) => ({ text: line, tone }));
+
+// A call the permission check refused, by the kind of check that refused it and the message the
+// model gets in its tool_result. `other` is the SDK's kind for none.
+export function deniedOutput(kind: string | undefined, message: string): Output {
+  const shown = kind === undefined || kind === "other" ? "" : ` (${kind})`;
+  return { lines: toLines(`denied${shown}: ${message}`, "denied") };
+}
 
 // A tool result as lines. `toolUseResult` is an object on success and a plain string on a failed
 // Bash call; the `content` the model saw is the fallback for every shape not handled here.

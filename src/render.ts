@@ -2,6 +2,7 @@ import type {
   SDKActiveGoalMessage,
   SDKAssistantMessage,
   SDKMessage,
+  SDKPermissionDeniedMessage,
   SDKResultMessage,
   SDKTaskNotificationMessage,
   SDKUserMessage,
@@ -11,7 +12,14 @@ import type {
 import { markdown } from "./markdown.ts";
 import { bold, gray, grayItalic, green, red, yellow } from "./style.ts";
 import { cleanLine, cleanLines, defuse, oneLine, truncate } from "./text.ts";
-import { callArgument, type Output, type OutputLine, resultOutput, type Tone } from "./tools.ts";
+import {
+  callArgument,
+  deniedOutput,
+  type Output,
+  type OutputLine,
+  resultOutput,
+  type Tone,
+} from "./tools.ts";
 
 const previewLines = 3;
 const previewWidth = 200;
@@ -66,6 +74,7 @@ const previewTone: Record<Tone, Color> = {
   plain: gray,
   error: red,
   stderr: yellow,
+  denied: yellow,
   added: green,
   removed: red,
   hunk: gray,
@@ -74,6 +83,7 @@ const foldedTone: Record<Tone, Color> = {
   plain: (text) => text,
   error: (text) => text,
   stderr: yellow,
+  denied: yellow,
   added: green,
   removed: red,
   hunk: gray,
@@ -90,6 +100,8 @@ function goalNote({ value }: SDKActiveGoalMessage): string {
 // result can be put under its own call, and a subagent's messages under the Agent call.
 export class Renderer {
   readonly #calls = new Map<string, Call>();
+  // The calls refused whose tool_result has not come yet: it repeats the denial, so it prints nothing.
+  readonly #denied = new Set<string>();
   // The calls the last printed line sits under. A line for another call first repeats its header.
   #context: string[] = [];
   #cwd = "";
@@ -126,6 +138,10 @@ export class Renderer {
           this.#taskNotification(message);
           break;
         }
+        if (message.subtype === "permission_denied") {
+          this.#denial(message);
+          break;
+        }
         const note = this.#systemNote(message);
         if (note !== undefined) this.#note(...note);
         break;
@@ -157,7 +173,7 @@ export class Renderer {
 
   // The one line a system message prints, or undefined for one that prints nothing.
   #systemNote(
-    message: Exclude<SystemMessage, SDKTaskNotificationMessage>,
+    message: Exclude<SystemMessage, SDKTaskNotificationMessage | SDKPermissionDeniedMessage>,
   ): [Color, string] | undefined {
     switch (message.subtype) {
       case "init":
@@ -197,7 +213,6 @@ export class Renderer {
       case "elicitation_complete":
       case "memory_recall":
       case "mirror_error":
-      case "permission_denied":
       case "worker_shutting_down":
         return [gray, `· system/${message.subtype}`];
       // Progress and UI state, not transcript.
@@ -259,6 +274,7 @@ export class Renderer {
     for (const block of content) {
       switch (block.type) {
         case "tool_result":
+          if (this.#denied.delete(block.tool_use_id)) break;
           this.#toolResult(
             block.tool_use_id,
             resultOutput(
@@ -339,6 +355,16 @@ export class Renderer {
     this.#enter([...call.chain, id]);
     this.#line(call.chain.length, gray("└"), taskColor[message.status](oneLine(taskEnd(message))));
     this.#context = call.chain;
+  }
+
+  // A refused call's outcome, shown as its result.
+  #denial({
+    tool_use_id: id,
+    decision_reason_type: kind,
+    message,
+  }: SDKPermissionDeniedMessage): void {
+    this.#toolResult(id, deniedOutput(kind, message), []);
+    this.#denied.add(id);
   }
 
   // Makes `chain` the context, repeating the header of each call in it the log is not under.
