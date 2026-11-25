@@ -52,7 +52,7 @@ dropped silently and never crashes the renderer.
 | Agent result | `content`, which is an array of text blocks |
 | user text | gray `›` and the text, previewed and folded like tool output: a subagent's prompt, or a message injected into the run |
 | subagent messages (`parent_tool_use_id` set) | indented under the Agent call by a gray `│` per level. A fold, title and lines, has no gutter |
-| `system/task_notification` | for a task that outlived its call (a background Bash or Agent call, whose result came first), `└ background: <status>` under the call, with `(<reason>)` when there is one, and an agent's seconds and tool uses: gray for `completed`, red for `failed`, yellow for `stopped`. Not its `summary`, which repeats the call's description or the agent's last text, nor its `output_file`. A task that ends before its call returns, or that sets `skip_transcript`, prints nothing: the result shows how it went |
+| `system/task_notification` | for a task that outlived its call (a background Bash or Agent call, whose result came first), a line under the call: a command's `summary`, which holds its exit code, or an agent's `background: <status>` with its seconds and tool uses (its `summary` is its last text, which the result showed), with `(<reason>)` when there is one; gray for `completed`, red for `failed`, yellow for `stopped`. Not its `output_file`. A task that ends before its call returns, or that sets `skip_transcript`, prints nothing: the result shows how it went |
 | `result` | `✻ <subtype> · N turns · Ns · $X` (green, or red on error with the `errors` under it). A line per `result`: a run with background subagents sends several. Turns and duration count per result, while `total_cost_usd` is the session's total so far |
 | `system/api_retry`, `session_writes_lost`, `compact_boundary`, `informational`, `notification`, `hook_response`, `local_command_output`, `model_refusal_*` | one line: yellow for a retry, lost session writes, a warning or a refusal fallback, red for a refusal or a failed hook, gray otherwise |
 | `active_goal` | gray `· goal: <condition> · N iterations · <last reason>`, or `· goal cleared` |
@@ -170,6 +170,6 @@ The CLI is the Action's live mode, not a separate deliverable.
   runner's rules to the output), a renderer stopped mid-group still closing it, and, for every
   language highlight.js has, highlighting that changes colors and never text. No tests that restate
   the code.
-- **Fixtures:** real `stream-json` runs, sanitized, plus hand-made streams of hostile output and of background Bash calls.
+- **Fixtures:** real `stream-json` runs, sanitized, plus a hand-made stream of hostile output.
   [`fixtures/claude/README.md`](../fixtures/claude/README.md) says what each covers and how to
   capture one.

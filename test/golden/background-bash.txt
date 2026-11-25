@@ -1,16 +1,25 @@
-[38;5;244m✻ claude-sonnet-5 · /home/runner/work/demo/demo[0m
-● I'll start the tests and the build in the background.
-[32m●[0m [1mBash[22m(npm test >/tmp/checks.log 2>&1)
-[32m●[0m [1mBash[22m(sleep 2 && echo built >/tmp/build.log)
-[32m●[0m [1mBash[22m(npm test >/tmp/checks.log 2>&1)
-[38;5;244m└[0m [38;5;244mCommand running in background with ID: bchk0001. Output is being written to: /tmp/claude-1001/-home-runner-work-demo-demo/5b0c7e1a-3d2f-4a8e-9c61-2f7d8e4b1a90/tasks/bchk0001.output[0m
-[32m●[0m [1mBash[22m(sleep 2 && echo built >/tmp/build.log)
-[38;5;244m└[0m [38;5;244mCommand running in background with ID: bbld0002. Output is being written to: /tmp/claude-1001/-home-runner-work-demo-demo/5b0c7e1a-3d2f-4a8e-9c61-2f7d8e4b1a90/tasks/bbld0002.output[0m
-[32m●[0m [1mBash[22m(sleep 2 && echo built >/tmp/build.log)
-[38;5;244m└[0m [38;5;244mbackground: completed[0m
-[32m●[0m [1mBash[22m(cat /tmp/build.log)
-[38;5;244m└[0m [38;5;244mbuilt[0m
-[32m●[0m [1mBash[22m(npm test >/tmp/checks.log 2>&1)
-[38;5;244m└[0m [31mbackground: failed[0m
-● The build finished; the test suite failed. Its log is in [1;36m/tmp/checks.log[22;39m.
-[32m✻ success · 4 turns · 6s · $0.03[0m
+[38;5;244m✻ claude-haiku-5-5 · /home/runner/work/demo/demo[0m
+[32m●[0m [1mBash[22m(sleep 6; echo tests; exit 1)
+[32m●[0m [1mBash[22m(sleep 2; echo built)
+[32m●[0m [1mBash[22m(sleep 6; echo tests; exit 1)
+[38;5;244m└[0m [38;5;244mCommand running in background with ID: btclt84ci. Output is being written to: /tmp/claude-1001/-home-runner-work-demo-demo/edfb157c-1924-4fa2-a5ce-b012debfd58c/tasks/btclt84ci.output. You will be not…[0m
+::group::[38;5;244m… 1 line[0m
+[0m  Command running in background with ID: btclt84ci. Output is being written to: /tmp/claude-1001/-home-runner-work-demo-demo/edfb157c-1924-4fa2-a5ce-b012debfd58c/tasks/btclt84ci.output. You will be notified when it completes. To check interim output, use Read on that file path.
+::endgroup::
+[32m●[0m [1mBash[22m(sleep 2; echo built)
+[38;5;244m└[0m [38;5;244mCommand running in background with ID: bhbdoypuz. Output is being written to: /tmp/claude-1001/-home-runner-work-demo-demo/edfb157c-1924-4fa2-a5ce-b012debfd58c/tasks/bhbdoypuz.output. You will be not…[0m
+::group::[38;5;244m… 1 line[0m
+[0m  Command running in background with ID: bhbdoypuz. Output is being written to: /tmp/claude-1001/-home-runner-work-demo-demo/edfb157c-1924-4fa2-a5ce-b012debfd58c/tasks/bhbdoypuz.output. You will be notified when it completes. To check interim output, use Read on that file path.
+::endgroup::
+● Both commands are running in the background, and I'll report how each ended when the notifications arrive.
+[32m✻ success · 3 turns · 3s · $0.00[0m
+[32m●[0m [1mBash[22m(sleep 2; echo built)
+[38;5;244m└[0m [38;5;244mBackground command "Run build-style command in background" completed (exit code 0)[0m
+[38;5;244m✻ claude-haiku-5-5 · /home/runner/work/demo/demo[0m
+● [1;36mbuilt[22;39m finished with exit code 0. The [1;36mtests[22;39m command ([1;36msleep 6; echo tests; exit 1[22;39m) is still running, and I'll report how it ended when it completes.
+[32m✻ success · 1 turn · 1s · $0.00[0m
+[32m●[0m [1mBash[22m(sleep 6; echo tests; exit 1)
+[38;5;244m└[0m [31mBackground command "Run failing test-style command in background" failed with exit code 1[0m
+[38;5;244m✻ claude-haiku-5-5 · /home/runner/work/demo/demo[0m
+● Both background commands have now finished: [1;36mtests[22;39m failed with exit code 1, and [1;36mbuilt[22;39m succeeded with exit code 0.
+[32m✻ success · 1 turn · 1s · $0.00[0m

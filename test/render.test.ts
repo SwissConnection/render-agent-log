@@ -86,17 +86,17 @@ describe("a result sits under its own call", () => {
 
   test("with two background tasks that end in the order they did not start", async () => {
     const lines = visibleLines(await render(fixture("background-bash")));
-    const completed = lines.indexOf("└ background: completed");
-    const failed = lines.indexOf("└ background: failed");
+    const completed = lines.findIndex((line) => line.endsWith("completed (exit code 0)"));
+    const failed = lines.findIndex((line) => line.endsWith("failed with exit code 1"));
     expect(completed).toBeGreaterThan(0);
     expect(failed).toBeGreaterThan(completed);
-    expect(lines[completed - 1]).toBe("● Bash(sleep 2 && echo built >/tmp/build.log)");
-    expect(lines[failed - 1]).toBe("● Bash(npm test >/tmp/checks.log 2>&1)");
+    expect(lines[completed - 1]).toBe("● Bash(sleep 2; echo built)");
+    expect(lines[failed - 1]).toBe("● Bash(sleep 6; echo tests; exit 1)");
   });
 
   test("with a foreground task, whose result alone shows how it ended", async () => {
     const lines = visibleLines(await render(fixture("edit-and-bash")));
-    expect(lines.filter((line) => line.includes("background:"))).toEqual([]);
+    expect(lines.filter((line) => line.includes("Background command"))).toEqual([]);
   });
 });
 
@@ -113,10 +113,10 @@ describe("errors stay red", () => {
 
   test("a background task that failed", async () => {
     const lines = (await render(fixture("background-bash"))).split("\n");
-    const ends = lines.filter((line) => visibleLines(line)[0]?.startsWith("└ background:"));
+    const ends = lines.filter((line) => visibleLines(line)[0]?.startsWith("└ Background command"));
     expect(ends).toHaveLength(2);
     expect(ends.filter((line) => line.includes(errorColor))).toEqual([
-      expect.stringContaining("background: failed"),
+      expect.stringContaining("failed with exit code 1"),
     ]);
   });
 

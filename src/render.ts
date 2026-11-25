@@ -52,14 +52,14 @@ const taskColor: Record<SDKTaskNotificationMessage["status"], Color> = {
   stopped: yellow,
 };
 
-// How a task ended, and what it cost when it was an agent.
-function taskEnd({ status, reason, usage }: SDKTaskNotificationMessage): string {
-  const parts = [`background: ${status}${reason === undefined ? "" : ` (${reason})`}`];
-  if (usage !== undefined) {
-    parts.push(`${Math.round(usage.duration_ms / 1000)}s`);
-    parts.push(`${usage.tool_uses} tool use${usage.tool_uses === 1 ? "" : "s"}`);
-  }
-  return parts.join(" · ");
+// How a task ended: a command's own summary, which holds its exit code, or an agent's status and cost.
+// An agent's summary is its last text, which its result already showed.
+function taskEnd({ status, reason, summary, usage }: SDKTaskNotificationMessage): string {
+  const why = reason === undefined ? "" : ` (${reason})`;
+  if (usage === undefined) return `${summary}${why}`;
+  const seconds = `${Math.round(usage.duration_ms / 1000)}s`;
+  const uses = `${usage.tool_uses} tool use${usage.tool_uses === 1 ? "" : "s"}`;
+  return [`background: ${status}${why}`, seconds, uses].join(" · ");
 }
 
 const previewTone: Record<Tone, Color> = {
