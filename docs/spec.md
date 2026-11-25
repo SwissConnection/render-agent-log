@@ -144,7 +144,7 @@ commits it on top of the released source, in a commit only its tags point at. Th
 share one chunk, `dist/chunk.js`, which holds the renderer and highlight.js (BSD-3-Clause, see
 [NOTICE](../NOTICE)) with all its languages.
 
-The Action, `SwissConnection/render-agent-log@v0`, runs on `node24`, so no runner needs an install
+The Action, `SwissConnection/render-agent-log@v1`, runs on `node24`, so no runner needs an install
 step. Its modes:
 
 - `with: execution-file: ${{ steps.claude.outputs.execution_file }}` renders a finished run, for
