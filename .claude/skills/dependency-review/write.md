@@ -15,6 +15,11 @@ One per piece of work the update owes or enables; related findings share one. Th
 | An existing bug found while reading, at most two per PR (list the rest in the note) | `main` |
 | An improvement that changes our code | `main`, or this PR's branch when it needs the new version |
 
+**Follow-ups that go together.** One that builds on another's change, or will likely edit the same code
+(one module or function), is chained on it: listed after it, with `branch` `prepared-pr/F1` for F1.
+Its PR is prepared once F1's is open, and both merge in one stack. Unrelated ones stay apart, so
+neither waits on the other's review.
+
 Every follow-up is **prepared**, so a draft PR is made for it, unless it needs the owner's choice, an
 open question or a scope that could grow. Dedupe first, closed issues included
 (`gh issue list --state all --search "<symbol or package> in:title,body"`): an open match is named in
@@ -25,7 +30,7 @@ open question or a scope that could grow. Dedupe first, closed issues included
   {
     "id": "F1",
     "title": "The consequence, not the version bump",
-    "body": "The research the note leaves out: the call site (path:line), the probe, the release-note link, the package old → new. It states the outcome; a fix it sketches is a starting point. Its last line is `Branch from <branch>.`",
+    "body": "The research the note leaves out: the call site (path:line), the probe, the release-note link, the package old → new. It states the outcome; a fix it sketches is a starting point.",
     "branch": "renovate/all",
     "prepared": true,
     "why_not": "",
@@ -35,7 +40,8 @@ open question or a scope that could grow. Dedupe first, closed issues included
 ]
 ```
 
-`why_not` is a few words when `prepared` is false. `bug` is true for an existing bug. With `existing`
+`branch` is the branch it builds on, by the table: `main`, this PR's `headRefName`, or `prepared-pr/F1`;
+the job ends the issue with it. `why_not` is a few words when `prepared` is false. `bug` is true for an existing bug. With `existing`
 set to an issue number, nothing is filed and that issue is linked. An empty list is `[]`.
 
 In the note, a follow-up is `#F1`; the job filing it puts its number in its place.

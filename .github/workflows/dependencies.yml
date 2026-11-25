@@ -298,6 +298,8 @@ jobs:
     runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
     timeout-minutes: 5
     permissions:
+      # Starts each follow-up's prepared PR
+      actions: write
       contents: read
       issues: write
     steps:
