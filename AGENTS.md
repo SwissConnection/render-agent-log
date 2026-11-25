@@ -64,7 +64,9 @@ committed: the release builds it, and a workflow that runs `uses: ./` builds it 
 Renovate (`renovate.yml`, `.github/renovate.json5`) keeps one PR with every dependency on the newest
 versions, daily. `dependencies.yml` writes its note, the description a reader sees: what moved, the
 typecheck against the new SDK, a real run of the new Claude Code through the branch's renderer, and
-the wrapper's live checks (`.github/scripts/dependency-note.sh`).
+the wrapper's live checks (`.github/scripts/dependency-note.sh`). An agent reviews it
+(`.claude/skills/dependency-review`, also `/dependency-review` locally) and writes the verdict at the
+top; it files what the update owes or enables as issues, without holding a token that can write.
 
 CI (`.github/workflows/ci.yml`) runs all but `fix`. The SDK is imported with `import type` only;
 nothing of it may reach `dist/`. highlight.js, with every language it has, is the one runtime dependency and most of
