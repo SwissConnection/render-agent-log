@@ -120,6 +120,8 @@ case "${cmd}" in
       echo "${why} This one is hand work." >"${RUNNER_TEMP}/why.md"
       refuse
     fi
+    # Once merged into the dependency PR's branch, its push runs dependencies.yml with these
+    git diff --cached --quiet HEAD -- .github .claude || echo "ci=true" >>"${GITHUB_OUTPUT}"
     ;;
   open)
     branch="prepared-pr/${ISSUE:?}"
@@ -142,6 +144,7 @@ case "${cmd}" in
     link_branch "${branch}"
     git push --force "https://x-access-token:${GH_TOKEN:?}@github.com/${GH_REPO:?}.git" "HEAD:refs/heads/${branch}"
     {
+      [[ "${CI_FILES:-}" != true ]] || printf '> [!WARNING]\n> It changes CI files or the review'"'"'s skill: read them before marking it ready.\n\n'
       review_head
       printf 'Closes #%s\n' "${ISSUE}"
       tail -n +2 "${dir}/pr.md"

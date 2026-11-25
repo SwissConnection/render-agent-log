@@ -50,10 +50,15 @@ setup() {
   mkdir -p "${followup}" "${check}"
   # Advice only: the publish job checks again on a fresh runner
   cp "${here}/publish.sh" "${check}/"
-  session=$(uuidgen | tr '[:upper:]' '[:lower:]')
-  reviewer=$(uuidgen | tr '[:upper:]' '[:lower:]')
+  session=$(uuid)
+  reviewer=$(uuid)
   deadline=$((SECONDS + AGENT_SECONDS))
   stopped=""
+}
+
+# The runner's kernel has one; macOS, for a local trial, has uuidgen
+uuid() {
+  cat /proc/sys/kernel/random/uuid 2>/dev/null || uuidgen | tr '[:upper:]' '[:lower:]'
 }
 
 # One message ($1) to the agent, with claude's other flags; sets `stopped` when it runs out of time or turns.

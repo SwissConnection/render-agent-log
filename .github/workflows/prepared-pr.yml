@@ -160,6 +160,8 @@ jobs:
           permission-contents: write
           permission-issues: write
           permission-pull-requests: write
+          # The dependency PR's branch, which a stacked follow-up builds on, moves workflow files
+          permission-workflows: write
 
       # For a follow-up on another PR's branch: publish.sh links it into one stack with that PR
       - name: Install gh stack
@@ -181,6 +183,7 @@ jobs:
           BASE: ${{ needs.prepare.outputs.base }}
           MILESTONE: ${{ needs.prepare.outputs.milestone }}
           BOT: ${{ steps.app.outputs.app-slug }}[bot]
+          CI_FILES: ${{ steps.check.outputs.ci }}
           DIR: ${{ runner.temp }}/followup
         run: bash "$RUNNER_TEMP/publish.sh" open "$DIR"
 
