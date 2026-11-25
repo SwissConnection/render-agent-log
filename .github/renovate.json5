@@ -1,0 +1,26 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended"],
+
+  // One PR for everything, kept on the newest versions by the daily run (renovate.yml): Claude's
+  // packages move almost every weekday anyway (#22).
+  dependencyDashboard: false,
+  separateMajorMinor: false,
+  minimumReleaseAge: "3 days",
+  packageRules: [
+    {
+      matchPackageNames: ["*"],
+      groupName: "all dependencies",
+      groupSlug: "all",
+    },
+    {
+      // The Action's runtime is node24 (action.yml)
+      matchPackageNames: ["@types/node"],
+      allowedVersions: "<25",
+    },
+  ],
+
+  // dependencies.yml writes its checks below Renovate's part, where Renovate's fingerprint stops.
+  prBodyTemplate: "{{{table}}}{{{warnings}}}{{{controls}}}",
+  fetchChangeLogs: "off",
+}

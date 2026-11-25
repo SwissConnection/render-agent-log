@@ -34,7 +34,7 @@ The renderer imports these types and switches exhaustively over the type of what
 stdout: `SDKMessage`, plus `active_goal` and the control protocol between the SDK and `claude`, which
 the wrapper sees (the SDK exports this union only as what a `Transport` reads). When a bump of
 the SDK adds a message type, `tsc` fails in that PR, and that failure is the work item.
-At runtime, a message the build did not know about prints as one gray `· <type>` line. It is never
+At runtime, a message the build did not know about prints as one gray line that says so. It is never
 dropped silently and never crashes the renderer.
 
 ## Output
@@ -57,7 +57,7 @@ dropped silently and never crashes the renderer.
 | `active_goal` | gray `· goal: <condition> · N iterations · <last reason>`, or `· goal cleared` |
 | `control_request`, `control_response`, `control_cancel_request`, `keep_alive` | dropped: the control protocol between the SDK and `claude` |
 | `task_*`, `tool_progress`, `rate_limit_event`, `thinking_tokens`, `stream_event`, and the other progress and UI-state messages listed in `src/render.ts` | dropped: they are progress, not transcript |
-| anything else | gray `· <type>` (`· system/<subtype>`), also for a message the renderer fails to render |
+| anything else | gray `· <type> (unknown message type)` (`· system/<subtype> (unknown subtype)`), and `· unrenderable <type> message (<error>)` for a message the renderer fails to render |
 
 Rules:
 

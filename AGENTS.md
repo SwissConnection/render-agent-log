@@ -61,6 +61,10 @@ Releases are cut by `release.yml` on each push to `main` that changes what users
 minor when a merged PR has the `minor` label. Never push a release tag by hand. `dist/` is not
 committed: the release builds it, and a workflow that runs `uses: ./` builds it first.
 
+Renovate (`renovate.yml`, `.github/renovate.json5`) keeps one PR with every dependency on the newest
+versions, daily. `dependencies.yml` writes its checks into that PR's description: the SDK's type
+diff, a real run of the new Claude Code through the branch's renderer, and the wrapper's live checks.
+
 CI (`.github/workflows/ci.yml`) runs all but `fix`. The SDK is imported with `import type` only;
 nothing of it may reach `dist/`. highlight.js, with every language it has, is the one runtime dependency and most of
 `dist/`. When an SDK bump fails the typecheck, a message type changed (rule 1).

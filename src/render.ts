@@ -34,10 +34,13 @@ export type StdoutMessage =
 type SystemMessage = Extract<SDKMessage, { type: "system" }>;
 type Color = (text: string) => string;
 
-// A message type or system subtype this build does not know.
-function unknownName(message: unknown): string {
+// The line for a message type or system subtype this build does not know. It says so: a few known
+// messages print their bare name on purpose.
+function unknownNote(message: unknown): string {
   const { type, subtype } = message as { type?: unknown; subtype?: unknown };
-  return subtype === undefined ? String(type) : `${String(type)}/${String(subtype)}`;
+  return subtype === undefined
+    ? `· ${String(type)} (unknown message type)`
+    : `· ${String(type)}/${String(subtype)} (unknown subtype)`;
 }
 
 const previewTone: Record<Tone, Color> = {
@@ -125,7 +128,7 @@ export class Renderer {
       case "prompt_suggestion":
         break;
       default:
-        this.#note(gray, `· ${unknownName(message satisfies never)}`);
+        this.#note(gray, unknownNote(message satisfies never));
     }
   }
 
@@ -184,7 +187,7 @@ export class Renderer {
       case "files_persisted":
         return undefined;
       default:
-        return [gray, `· ${unknownName(message satisfies never)}`];
+        return [gray, unknownNote(message satisfies never)];
     }
   }
 

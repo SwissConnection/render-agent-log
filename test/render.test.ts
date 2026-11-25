@@ -135,11 +135,14 @@ describe("a message the build does not know", () => {
   };
 
   test("prints one line for an unknown type", () => {
-    expectOneLine({ type: "from_a_newer_sdk" }, "· from_a_newer_sdk");
+    expectOneLine({ type: "from_a_newer_sdk" }, "· from_a_newer_sdk (unknown message type)");
   });
 
   test("prints one line for an unknown system subtype", () => {
-    expectOneLine({ type: "system", subtype: "from_a_newer_sdk" }, "· system/from_a_newer_sdk");
+    expectOneLine(
+      { type: "system", subtype: "from_a_newer_sdk" },
+      "· system/from_a_newer_sdk (unknown subtype)",
+    );
   });
 
   test("prints one line for a message of a known type in a shape it does not know", () => {
