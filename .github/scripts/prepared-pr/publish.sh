@@ -139,7 +139,7 @@ case "${cmd}" in
     link_branch "${branch}"
     git push --force "https://x-access-token:${GH_TOKEN:?}@github.com/${GH_REPO:?}.git" "HEAD:refs/heads/${branch}"
     {
-      [[ "${CI_FILES:-}" != true ]] || printf '> [!WARNING]\n> It changes CI files or the review'"'"'s skill: read them before marking it ready.\n\n'
+      [[ "${CI_FILES:-}" != true ]] || printf '> [!WARNING]\n> It changes CI files or the review'"'"'s skill, which run with the repository'"'"'s secrets once merged: read them before merging.\n\n'
       review_head
       printf 'Closes #%s\n' "${ISSUE}"
       tail -n +2 "${dir}/pr.md"
