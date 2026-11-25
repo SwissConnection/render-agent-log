@@ -57,12 +57,12 @@ The wrapper (`wrapper/claude-wrapper`) reaches the log through `/proc`, so its t
 On macOS, run them in a container: copy the tree without `node_modules` into `node:24-bookworm`, then
 `npm ci && npx vitest run test/wrapper.test.ts`.
 
-A release is a pushed `vX.Y.Z` tag, or a drafted release published under a new one: `release.yml`
-publishes it unless it is already, and moves the `vX` tag to it.
+Releases are cut by `release.yml` on each push to `main` that changes what users run: a patch, or a
+minor when a merged PR has the `minor` label. Never push a release tag by hand. `dist/` is not
+committed: the release builds it, and a workflow that runs `uses: ./` builds it first.
 
-CI (`.github/workflows/ci.yml`) runs all but `fix`, and fails when `dist/` differs from a fresh build,
-so commit `dist/` with every source change. The SDK is imported with `import type` only; nothing of it
-may reach `dist/`. highlight.js, with every language it has, is the one runtime dependency and most of
+CI (`.github/workflows/ci.yml`) runs all but `fix`. The SDK is imported with `import type` only;
+nothing of it may reach `dist/`. highlight.js, with every language it has, is the one runtime dependency and most of
 `dist/`. When an SDK bump fails the typecheck, a message type changed (rule 1).
 
 ## Rules
@@ -76,8 +76,9 @@ may reach `dist/`. highlight.js, with every language it has, is the one runtime 
 3. **A result always sits under its own call**, including parallel calls and subagents
    (spec § Output, rule 1).
 4. **Live first.** One write per message; nothing may buffer a whole run (spec § Output, rule 4).
-5. **Workflows that run Claude trigger only on `push` or `workflow_dispatch`.** This repository is
-   public; never `pull_request` or `pull_request_target` for a job that holds a token.
+5. **Workflows that run Claude trigger only on `push` or `workflow_dispatch`**, or are called by one.
+   This repository is public; never `pull_request` or `pull_request_target` for a job that holds a
+   token.
 6. **Tests catch silent wrong answers**; no test restates the code under test
    ([spec § Engineering](docs/spec.md#engineering), [craft § 5](docs/craft.md#5-behind-the-rules)).
 7. **Comments** do three jobs only: what a unit is, a gotcha the code cannot show, why something that

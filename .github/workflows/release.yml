@@ -1,47 +1,116 @@
-# Publishes a pushed vX.Y.Z tag as a GitHub release, unless it is one already, and moves the vX tag
-# to it, so `uses: …@vX` follows the latest release. No agent runs here.
+# Releases each push to main that changes what users run: CI, then the wrapper's live checks on real
+# Claude, then the built dist/ committed on top as the release commit, which is not on main, tagged
+# vX.Y.Z, and the major tag moved to it. A patch, or a minor when a PR merged since the last release has
+# the `minor` label; a new major only by hand. A failed run releases nothing, and the next push's run
+# releases what it held back.
 name: Release
 
 on:
   push:
-    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+    branches: [main]
+  # Retries a failed run on main. From another branch it runs every check and releases nothing.
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+
+# One at a time, so each run sees the tags of the one before it
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  release:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  changes:
+    name: What users run
+    needs: ci
     runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
     timeout-minutes: 10
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0 # the tags, and the commits since the last one
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
           cache: npm
-      - run: npm ci
-      - name: dist/ matches the source
-        run: |
-          npm run build
-          if [ -n "$(git status --porcelain -- dist)" ]; then
-            echo "::error::dist/ is stale at $GITHUB_REF_NAME. Tag a commit whose dist/ is built."
-            exit 1
-          fi
-      - name: Release and move the major tag
+      - run: npm ci && npm run build
+      - name: Next version
+        id: version
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
         run: |
-          # Publishing a drafted release, as the web UI does, pushes the tag itself (#35).
-          if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" --verify-tag --generate-notes --title "$TAG"
+          set -euo pipefail
+          last=$(git tag --list 'v*.*.*' --sort=-v:refname | head -n 1)
+          # Staged, so the diff sees the ignored dist/
+          git add --force dist
+          if git diff --cached --quiet "$last" -- dist action.yml wrapper bin; then
+            echo "::notice::Nothing users run changed since $last, so nothing is released."
+            exit 0
           fi
-          major=${TAG%%.*}
-          if gh api "repos/$GH_REPO/git/ref/tags/$major" >/dev/null 2>&1; then
-            gh api -X PATCH "repos/$GH_REPO/git/refs/tags/$major" -f sha="$GITHUB_SHA" -F force=true
+          minor=false
+          for sha in $(git rev-list "$last..HEAD"); do
+            labels=$(gh api "repos/$GH_REPO/commits/$sha/pulls" --jq '.[].labels[].name')
+            if grep -qx minor <<<"$labels"; then minor=true; fi
+          done
+          IFS=. read -r major middle patch <<<"${last#v}"
+          if [[ $minor == true ]]; then
+            tag="v$major.$((middle + 1)).0"
           else
-            gh api "repos/$GH_REPO/git/refs" -f ref="refs/tags/$major" -f sha="$GITHUB_SHA"
+            tag="v$major.$middle.$((patch + 1))"
           fi
+          echo "::notice::$last is followed by $tag."
+          echo "tag=$tag" >>"$GITHUB_OUTPUT"
+
+  wrapper:
+    needs: changes
+    if: needs.changes.outputs.tag != ''
+    uses: ./.github/workflows/wrapper.yml
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+  release:
+    needs: [changes, wrapper]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      # Keeps the token, for the tag pushes below
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
+          cache: npm
+      - run: npm ci && npm run build
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: claude-code-version
+          path: ${{ runner.temp }}
+      - name: Release and move the major tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.changes.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git add --force dist
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit --quiet -m "$TAG"
+          git tag "$TAG"
+          git push origin "refs/tags/$TAG"
+          claude_code=$(<"$RUNNER_TEMP/claude-code-version")
+          action=$(grep -oE 'claude-code-action@[0-9a-f]+ # v[0-9.]+' .github/workflows/wrapper.yml | sed 's/.*# //')
+          sdk=$(jq -r '.devDependencies["@anthropic-ai/claude-agent-sdk"]' package.json)
+          gh release create "$TAG" --verify-tag --title "$TAG" --generate-notes --notes \
+            "Tested with Claude Code $claude_code through claude-code-action $action, and the message types of Agent SDK $sdk."
+          # Last, so the major tag moves only to a published release
+          major=${TAG%%.*}
+          git tag --force "$major"
+          git push --force origin "refs/tags/$major"

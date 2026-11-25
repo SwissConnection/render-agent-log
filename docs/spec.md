@@ -136,7 +136,8 @@ Rules:
 
 ## Packaging
 
-One TypeScript package, bundled with esbuild to `dist/`, which is committed. The CLI and the Action
+One TypeScript package, bundled with esbuild to `dist/`. `main` does not hold it: each release
+commits it on top of the released source, in a commit only its tags point at. The CLI and the Action
 share one chunk, `dist/chunk.js`, which holds the renderer and highlight.js (BSD-3-Clause, see
 [NOTICE](../NOTICE)) with all its languages.
 
