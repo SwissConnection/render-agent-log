@@ -38,19 +38,58 @@ jobs:
     name: The SDK's types
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04 # ubuntu-latest adds a label-migration notice to every run summary
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Against main's
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24 # the Action's runtime (runs.using: node24), not the newest Node
+          cache: npm
+      - run: npm ci
+      # tsc names each message type the renderer does not handle (AGENTS.md rule 1); the diff is for reading
+      - name: Typecheck, and the diff against main's
         run: |
           set -euo pipefail
+          out=$RUNNER_TEMP/types
+          mkdir -p "$out"
           git fetch --quiet --depth=1 origin main
           sdk='.devDependencies["@anthropic-ai/claude-agent-sdk"]'
           old=$(git show FETCH_HEAD:package.json | jq -r "$sdk")
           new=$(jq -r "$sdk" package.json)
-          bash .github/scripts/type-diff.sh "$old" "$new" "$RUNNER_TEMP/types"
+          errors=0
+          npx tsc >"$out/tsc.txt" 2>&1 || errors=$(grep -c 'error TS' "$out/tsc.txt" || echo 1)
+          {
+            if ((errors == 0)); then
+              echo "✅ **Typecheck** against Agent SDK $new: the renderer handles every message type"
+            else
+              echo "❌ **Typecheck** against Agent SDK $new: $errors errors"
+              echo
+              echo '```'
+              head -c 10000 "$out/tsc.txt"
+              echo '```'
+            fi
+            echo
+            if [[ $old == "$new" ]]; then
+              echo "The Agent SDK stays at $old."
+            else
+              bash .github/scripts/type-diff.sh "$old" "$new" >"$out/types.diff"
+              echo "<details><summary>The SDK's types, $old → $new: $(grep -c '^[+-][^+-]' "$out/types.diff" || true) lines changed</summary>"
+              echo
+              echo '```diff'
+              head -c 30000 "$out/types.diff"
+              echo
+              echo '```'
+              if (($(wc -c <"$out/types.diff") > 30000)); then
+                echo
+                echo "The first 30 KB: the whole diff is in the run's \`types\` artifact."
+              fi
+              echo
+              echo "</details>"
+            fi
+          } >"$out/types.md"
+          cat "$out/types.md"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: types
@@ -170,11 +209,11 @@ jobs:
             echo
             echo "### Checks"
             echo
+            cat "$checks/types.md" 2>/dev/null || echo "❌ **Typecheck**: no result · [run]($RUN)"
+            echo
             cat "$checks/line.md" 2>/dev/null || echo "❌ **A real run**: no result · [run]($RUN)"
             echo
             echo "$wrapper"
-            echo
-            cat "$checks/summary.md" 2>/dev/null || echo "❌ **The SDK's types**: no result · [run]($RUN)"
           } >"$RUNNER_TEMP/card.md"
           cat "$RUNNER_TEMP/card.md" >>"$GITHUB_STEP_SUMMARY"
           pr=$(gh pr list --head "$GITHUB_REF_NAME" --state open --json number --jq '.[0].number // empty')
