@@ -52,11 +52,12 @@ dropped silently and never crashes the renderer.
 | Agent result | `content`, which is an array of text blocks |
 | user text | gray `›` and the text, previewed and folded like tool output: a subagent's prompt, or a message injected into the run |
 | subagent messages (`parent_tool_use_id` set) | indented under the Agent call by a gray `│` per level. A fold, title and lines, has no gutter |
+| `system/task_notification` | for a task that outlived its call (a background Bash or Agent call, whose result came first), a line under the call: a command's `summary`, which holds its exit code, or an agent's `background: <status>` with its seconds and tool uses (its `summary` is its last text, which the result showed), with `(<reason>)` when there is one; gray for `completed`, red for `failed`, yellow for `stopped`. Not its `output_file`. A task that ends before its call returns, or that sets `skip_transcript`, prints nothing: the result shows how it went |
 | `result` | `✻ <subtype> · N turns · Ns · $X` (green, or red on error with the `errors` under it). A line per `result`: a run with background subagents sends several. Turns and duration count per result, while `total_cost_usd` is the session's total so far |
 | `system/api_retry`, `session_writes_lost`, `compact_boundary`, `informational`, `notification`, `hook_response`, `local_command_output`, `model_refusal_*` | one line: yellow for a retry, lost session writes, a warning or a refusal fallback, red for a refusal or a failed hook, gray otherwise |
 | `active_goal` | gray `· goal: <condition> · N iterations · <last reason>`, or `· goal cleared` |
 | `control_request`, `control_response`, `control_cancel_request`, `keep_alive` | dropped: the control protocol between the SDK and `claude` |
-| `task_*`, `tool_progress`, `rate_limit_event`, `thinking_tokens`, `stream_event`, and the other progress and UI-state messages listed in `src/render.ts` | dropped: they are progress, not transcript |
+| the other `task_*` messages, `tool_progress`, `rate_limit_event`, `thinking_tokens`, `stream_event`, and the other progress and UI-state messages listed in `src/render.ts` | dropped: they are progress, not transcript |
 | anything else | gray `· <type> (unknown message type)` (`· system/<subtype> (unknown subtype)`), and `· unrenderable <type> message (<error>)` for a message the renderer fails to render |
 
 Rules:

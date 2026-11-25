@@ -9,6 +9,7 @@ import { red } from "../src/style.ts";
 import { fixture, liveCommands, render, viewerMarkers, visibleLines } from "./helpers.ts";
 
 const fixtures = [
+  "background-bash",
   "edit-and-bash",
   "highlighting",
   "hostile-output",
@@ -82,6 +83,21 @@ describe("a result sits under its own call", () => {
       expect(topLevelAbove(lines, index), nested).toBe(`● Agent(${agent})`);
     }
   });
+
+  test("with two background tasks that end in the order they did not start", async () => {
+    const lines = visibleLines(await render(fixture("background-bash")));
+    const completed = lines.findIndex((line) => line.endsWith("completed (exit code 0)"));
+    const failed = lines.findIndex((line) => line.endsWith("failed with exit code 1"));
+    expect(completed).toBeGreaterThan(0);
+    expect(failed).toBeGreaterThan(completed);
+    expect(lines[completed - 1]).toBe("● Bash(sleep 2; echo built)");
+    expect(lines[failed - 1]).toBe("● Bash(sleep 6; echo tests; exit 1)");
+  });
+
+  test("with a foreground task, whose result alone shows how it ended", async () => {
+    const lines = visibleLines(await render(fixture("edit-and-bash")));
+    expect(lines.filter((line) => line.includes("Background command"))).toEqual([]);
+  });
 });
 
 describe("errors stay red", () => {
@@ -93,6 +109,15 @@ describe("errors stay red", () => {
     const preview = (start: number) => lines.slice(start + 1, start + 4);
     for (const line of preview(failed)) expect(line).toContain(errorColor);
     for (const line of preview(passed)) expect(line).not.toContain(errorColor);
+  });
+
+  test("a background task that failed", async () => {
+    const lines = (await render(fixture("background-bash"))).split("\n");
+    const ends = lines.filter((line) => visibleLines(line)[0]?.startsWith("└ Background command"));
+    expect(ends).toHaveLength(2);
+    expect(ends.filter((line) => line.includes(errorColor))).toEqual([
+      expect.stringContaining("failed with exit code 1"),
+    ]);
   });
 
   test("a run that ends in an error", async () => {
