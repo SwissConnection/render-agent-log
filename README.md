@@ -100,6 +100,16 @@ action it writes to the action process's standard output through `/proc`, which 
 macOS and Windows runners the `wrapper` output is empty, the Action prints a warning, and
 `claude-code-action` runs unrendered; use the CLI or the execution file there.
 
+Since v1.0.273, `claude-code-action` starts a session in auto mode, where a safety review decides
+the tool calls no allow rule covers, but not when `path_to_claude_code_executable` is set, since a
+`claude` it did not install may not know that mode; with the wrapper, those calls are denied. The
+wrapper runs the `claude` the action ships, which knows auto mode, so this line in the action's
+`with:` turns it back on:
+
+```yaml
+claude_args: --permission-mode auto
+```
+
 Any other program built on the Agent SDK can use the wrapper the same way, as long as its standard
 output is the step's log, not piped or redirected. Pass the `wrapper` output as the SDK's
 `cli_path` (Python) or `pathToClaudeCodeExecutable` (TypeScript). The wrapper runs the `claude` that
