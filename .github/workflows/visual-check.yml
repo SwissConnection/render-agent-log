@@ -58,3 +58,7 @@ jobs:
           echo "::add-mask::control-after"
           echo "control: control-after (prints *** when commands are live again after the renderer)"
           echo "injected: hostile-mask-value, legacy-mask-value, web-mask-value, fold-mask-value, fold-legacy-mask-value (print in clear when the injected add-mask commands stayed inert)"
+      - name: "UX: every status, as rendered"
+        run: render-agent-log < ux/statuses.jsonl
+      - name: "UX: denial wordings"
+        run: bash ux/denied.sh
