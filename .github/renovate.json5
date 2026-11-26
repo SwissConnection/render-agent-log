@@ -3,7 +3,7 @@
   extends: ["config:recommended"],
 
   // One daily PR: Claude's packages move almost every weekday anyway (#22)
-  dependencyDashboard: false,
+  dependencyDashboard: { enabled: false },
   separateMajorMinor: false,
   minimumReleaseAge: "3 days",
   // Its checks run the workflows on its branch, so they stay main's
