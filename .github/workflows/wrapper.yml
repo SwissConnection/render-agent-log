@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         # One turn ends the run in error_max_turns, so the action reports a failure (::error::), which is
-        # the case's expected outcome. In the cancelled case, the step times out in a sleep, and the
+        # the case's expected outcome. In the cancelled case, the step times out in a wait, and the
         # action stops the session (#84).
         include:
           - { name: healthy, renderer: healthy, max_turns: 4, outcome: success }
@@ -97,10 +97,11 @@ jobs:
           allowed_bots: github-actions
           path_to_claude_code_executable: ${{ steps.render.outputs.wrapper }}
           # Bash, not Read: Read numbers its lines, so injected commands would not start a line.
+          # Not a sleep in the cancelled case: Claude Code blocks a standalone sleep.
           prompt: |
             In a single message, make these two tool calls in parallel:
             Bash `cat ${{ runner.temp }}/hostile-output.txt` and Read `README.md`.
-            ${{ matrix.cancel && 'Then run Bash `sleep 300`.' || '' }}
+            ${{ matrix.cancel && 'Then run Bash `timeout 300 tail -f /dev/null`.' || '' }}
             Then reply with one short sentence. Do nothing else.
           claude_args: |
             --model haiku
