@@ -24,13 +24,14 @@ jobs:
       fail-fast: false
       matrix:
         # One turn ends the run in error_max_turns, so the action reports a failure (::error::), which is
-        # the case's expected outcome.
+        # the case's expected outcome. So is a timeout, which the action handles as a cancel (#84).
         include:
           - { name: healthy, renderer: healthy, max_turns: 4, outcome: success }
           - { name: renderer dies, renderer: dies, max_turns: 4, outcome: success }
           - { name: renderer hangs, renderer: hangs, max_turns: 4, outcome: success }
           - { name: run fails, renderer: healthy, max_turns: 1, outcome: failure }
           - { name: renderer dies and run fails, renderer: dies, max_turns: 1, outcome: failure }
+          - { name: run cancelled, renderer: records, max_turns: 4, outcome: failure, cancel: true }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -47,8 +48,7 @@ jobs:
         with:
           stream-copy: ${{ runner.temp }}/claude-stream.jsonl
 
-      # The node that runs the renderer is the seam: in the claude step, the renderer dies right after
-      # it opens its first group, or never reads at all. A later write to GITHUB_ENV wins.
+      # The node that runs the renderer is the seam. A later write to GITHUB_ENV wins.
       - name: Stand in for the renderer's node
         run: |
           fake="$RUNNER_TEMP/fake-node"
@@ -57,6 +57,11 @@ jobs:
           case "\$SPIKE_RENDERER" in
             dies) "$RENDER_AGENT_LOG_NODE" "\$@" | awk '{ print } /^::group::/ { exit 1 }' ;;
             hangs) exec sleep 3600 ;;
+            records)
+              trap '' TERM
+              "$RENDER_AGENT_LOG_NODE" "\$@"
+              echo \$? >"$RUNNER_TEMP/renderer-exit"
+              ;;
             *) exec "$RENDER_AGENT_LOG_NODE" "\$@" ;;
           esac
           EOF
@@ -78,6 +83,7 @@ jobs:
       - name: Claude through the wrapper
         id: claude
         continue-on-error: ${{ matrix.outcome == 'failure' }}
+        timeout-minutes: ${{ matrix.cancel && 1 || 10 }}
         uses: anthropics/claude-code-action@4411a9e9b0283becf4b924f7bce360fd7756c78c # v1.0.290
         env:
           SPIKE_RENDERER: ${{ matrix.renderer }}
@@ -88,9 +94,11 @@ jobs:
           allowed_bots: github-actions
           path_to_claude_code_executable: ${{ steps.render.outputs.wrapper }}
           # Bash, not Read: Read numbers its lines, so injected commands would not start a line.
+          # Not sleep: Claude Code blocks a standalone sleep.
           prompt: |
             In a single message, make these two tool calls in parallel:
             Bash `cat ${{ runner.temp }}/hostile-output.txt` and Read `README.md`.
+            ${{ matrix.cancel && 'Then run Bash `timeout 300 tail -f /dev/null`.' || '' }}
             Then reply with one short sentence. Do nothing else.
           claude_args: |
             --model haiku
@@ -114,17 +122,29 @@ jobs:
           echo "control: control-after-action (prints *** when commands are live in this step)"
           echo "injected: spike-wrapper-secret (prints in clear when the injected add-mask stayed inert)"
           echo "action outputs: conclusion=${CONCLUSION:-unset} execution_file=${EXECUTION_FILE:-unset}"
-          if [ "$RENDERER" = hangs ]; then
-            echo "a hung renderer never gets to write the raw copy"
+          stream="$RUNNER_TEMP/claude-stream.jsonl"
+          if [ "$RENDERER" = records ]; then
+            status=$(cat "$RUNNER_TEMP/renderer-exit" 2>/dev/null || echo none)
+            echo "renderer exit status: $status"
+            if [ "$status" != 143 ]; then
+              echo "::error::the renderer's exit status is $status, where a stop on the action's SIGTERM gives 143"
+              exit 1
+            fi
+            # A cancel leaves no execution file to compare with.
+            if ! jq -e 'select(.type == "assistant") | .message.content[]? | select(.type == "tool_use")
+                | .input.command // "" | select(contains("tail -f"))' "$stream" >/dev/null; then
+              echo "::error::the wrapper's copy is missing, cut short, or ends before the call the run stopped in"
+              exit 1
+            fi
+            echo "the wrapper's copy holds the run up to the call it stopped in"
             exit 0
           fi
-          # The wrapper removes its buffer once the copy is written.
+          # The wrapper removes its buffer once tail is done with it.
           for _ in $(seq 50); do
             ls "$RUNNER_TEMP"/render-agent-log.* >/dev/null 2>&1 || break
             sleep 0.2
           done
           # Every message the SDK recorded, byte for byte after normalizing, is in the wrapper's copy.
-          stream="$RUNNER_TEMP/claude-stream.jsonl"
           if [ ! -s "$stream" ] || [ ! -s "$EXECUTION_FILE" ]; then
             echo "::error::the wrapper's copy or the execution file is missing or empty"
             exit 1
@@ -159,5 +179,5 @@ jobs:
           execution-file: ${{ steps.claude.outputs.execution_file }}
 
       - name: The same run, through the CLI
-        if: always() && matrix.renderer != 'hangs'
+        if: always()
         run: render-agent-log < "$RUNNER_TEMP/claude-stream.jsonl"

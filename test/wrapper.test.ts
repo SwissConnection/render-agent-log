@@ -18,6 +18,8 @@ interface Run {
   sdk: Promise<{ stream: string; code: number }>;
   // Everything written to the step's log, once every writer has let go of it.
   log: Promise<string>;
+  // What has reached the step's log so far.
+  logged: () => string;
   // The run's scratch directory, which also holds the raw copy when asked for (copy.jsonl).
   dir: string;
 }
@@ -28,19 +30,31 @@ function script(dir: string, name: string, body: string): string {
   return path;
 }
 
+// A claude slow to stop, in node: a shell would reap tee, which claude, its parent, never does.
+const lingers =
+  'process.on("SIGTERM", () => setTimeout(() => process.exit(143), 2000)); setInterval(() => {}, 60000);';
+
 // Runs the wrapper under the stand-in SDK. `renderer` replaces the node that runs the renderer,
-// `shim` puts a process between the SDK and the wrapper, `copy` asks for the raw copy, and `pause`
-// has claude stop after its first line.
+// `shim` puts a process between the SDK and the wrapper, `copy` asks for the raw copy or names its
+// path, and `pause` has claude stop after its first line.
 function runWrapper(
   stream: string,
-  options: { renderer?: string; shim?: boolean; copy?: boolean; pause?: boolean } = {},
+  options: {
+    renderer?: string;
+    shim?: boolean;
+    copy?: boolean | string;
+    pause?: boolean;
+    wait?: boolean;
+  } = {},
 ): Run {
   const dir = mkdtempSync(join(tmpdir(), "wrapper-test-"));
   const file = join(dir, "stream.jsonl");
   writeFileSync(file, stream);
   const print = options.pause
     ? `head -n 1 "${file}"; sleep 1; tail -n +2 "${file}"`
-    : `exec cat "${file}"`;
+    : options.wait
+      ? `echo $PPID > "${dir}/sdk.pid"; cat "${file}"; exec "${process.execPath}" -e '${lingers}'`
+      : `exec cat "${file}"`;
   const claude = script(dir, "claude", print);
   const target = options.shim ? script(dir, "shim", `"${wrapper}" "$@"`) : wrapper;
   const out = join(dir, "sdk.json");
@@ -50,7 +64,12 @@ function runWrapper(
       ...process.env,
       RENDER_AGENT_LOG_CLAUDE: claude,
       RENDER_AGENT_LOG_NODE: options.renderer ?? process.execPath,
-      ...(options.copy ? { RENDER_AGENT_LOG_STREAM_COPY: join(dir, "copy.jsonl") } : {}),
+      ...(options.copy
+        ? {
+            RENDER_AGENT_LOG_STREAM_COPY:
+              options.copy === true ? join(dir, "copy.jsonl") : options.copy,
+          }
+        : {}),
       RUNNER_TEMP: dir,
     },
   });
@@ -63,7 +82,33 @@ function runWrapper(
     while (!existsSync(out)) await sleep(20);
     return JSON.parse(readFileSync(out, "utf8"));
   })();
-  return { sdk, log: once(child, "exit").then(() => log), dir };
+  return { sdk, log: once(child, "exit").then(() => log), logged: () => log, dir };
+}
+
+// Stops the processes under `root` as claude-code-action does on a cancel (its stopDescendants).
+async function stopUnder(root: number): Promise<void> {
+  const children = new Map<number, number[]>();
+  for (const name of readdirSync("/proc").filter((entry) => /^\d+$/.test(entry))) {
+    try {
+      const stat = readFileSync(`/proc/${name}/stat`, "utf8");
+      const parent = Number(stat.slice(stat.lastIndexOf(")") + 2).split(" ")[1]);
+      children.set(parent, [...(children.get(parent) ?? []), Number(name)]);
+    } catch {
+      // It has ended
+    }
+  }
+  const tree = [root];
+  for (const pid of tree) tree.push(...(children.get(pid) ?? []));
+  for (const signal of ["SIGSTOP", "SIGTERM", "SIGCONT", "SIGKILL"] as const) {
+    if (signal === "SIGKILL") await sleep(1000);
+    for (const pid of tree.slice(1)) {
+      try {
+        process.kill(pid, signal);
+      } catch {
+        // It has ended
+      }
+    }
+  }
 }
 
 // A stream far larger than a pipe holds: one tool result of 200,000 lines.
@@ -150,6 +195,26 @@ describe.skipIf(process.platform !== "linux")("the wrapper", () => {
     const text = await log;
     expect(text).toContain("::group::");
     expect(text.slice(text.lastIndexOf("::group::"))).toMatch(/\n::endgroup::\n$/);
+  }, 20_000);
+
+  test("keeps the whole raw copy and adds nothing to the log when the action stops the run", async () => {
+    const stream = fixture("subagent");
+    const rendered = await render(stream);
+    const { log, logged, dir } = runWrapper(stream, { copy: true, wait: true });
+    while (logged() !== rendered) await sleep(20);
+    await stopUnder(Number(readFileSync(join(dir, "sdk.pid"), "utf8")));
+    expect(await log).toBe(rendered);
+    expect(readFileSync(join(dir, "copy.jsonl"), "utf8")).toBe(stream);
+  }, 20_000);
+
+  test("warns and runs without the copy when it cannot write one", async () => {
+    const stream = fixture("edit-and-bash");
+    const { sdk, log } = runWrapper(stream, { copy: "/nonexistent/copy.jsonl" });
+    expect(await sdk).toEqual({ stream, code: 0 });
+    expect(await log).toBe(
+      "::warning::render-agent-log: cannot write the stream copy to /nonexistent/copy.jsonl, so this run has none.\n" +
+        (await render(stream)),
+    );
   }, 20_000);
 
   test("warns and renders nothing when its parent's stdout is not the log", async () => {
