@@ -35,14 +35,14 @@ const lingers =
   'process.on("SIGTERM", () => setTimeout(() => process.exit(143), 2000)); setInterval(() => {}, 60000);';
 
 // Runs the wrapper under the stand-in SDK. `renderer` replaces the node that runs the renderer,
-// `shim` puts a process between the SDK and the wrapper, `copy` asks for the raw copy, and `pause`
-// has claude stop after its first line.
+// `shim` puts a process between the SDK and the wrapper, `copy` asks for the raw copy or names its
+// path, and `pause` has claude stop after its first line.
 function runWrapper(
   stream: string,
   options: {
     renderer?: string;
     shim?: boolean;
-    copy?: boolean;
+    copy?: boolean | string;
     pause?: boolean;
     wait?: boolean;
   } = {},
@@ -64,7 +64,12 @@ function runWrapper(
       ...process.env,
       RENDER_AGENT_LOG_CLAUDE: claude,
       RENDER_AGENT_LOG_NODE: options.renderer ?? process.execPath,
-      ...(options.copy ? { RENDER_AGENT_LOG_STREAM_COPY: join(dir, "copy.jsonl") } : {}),
+      ...(options.copy
+        ? {
+            RENDER_AGENT_LOG_STREAM_COPY:
+              options.copy === true ? join(dir, "copy.jsonl") : options.copy,
+          }
+        : {}),
       RUNNER_TEMP: dir,
     },
   });
@@ -200,6 +205,16 @@ describe.skipIf(process.platform !== "linux")("the wrapper", () => {
     await stopUnder(Number(readFileSync(join(dir, "sdk.pid"), "utf8")));
     expect(await log).toBe(rendered);
     expect(readFileSync(join(dir, "copy.jsonl"), "utf8")).toBe(stream);
+  }, 20_000);
+
+  test("warns and runs without the copy when it cannot write one", async () => {
+    const stream = fixture("edit-and-bash");
+    const { sdk, log } = runWrapper(stream, { copy: "/nonexistent/copy.jsonl" });
+    expect(await sdk).toEqual({ stream, code: 0 });
+    expect(await log).toBe(
+      "::warning::render-agent-log: cannot write the stream copy to /nonexistent/copy.jsonl, so this run has none.\n" +
+        (await render(stream)),
+    );
   }, 20_000);
 
   test("warns and renders nothing when its parent's stdout is not the log", async () => {

@@ -64,7 +64,13 @@ fi
 # renderer hangs or falls behind, and stall tee, claude and the SDK with it; a file never fills. tee -p
 # ignores SIGPIPE, so it keeps the files whole should the SDK stop reading first.
 buffer=$(mktemp "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/render-agent-log.XXXXXX")
-exec > >(tee -a -p -- "$buffer" ${RENDER_AGENT_LOG_STREAM_COPY:+"$RENDER_AGENT_LOG_STREAM_COPY"})
+copy=${RENDER_AGENT_LOG_STREAM_COPY:-}
+# tee's own error would go to claude's stderr, which no host shows.
+if [[ -n $copy ]] && ! : 2>/dev/null >>"$copy"; then
+  printf '::warning::render-agent-log: cannot write the stream copy to %s, so this run has none.\n' "$copy" >"$log"
+  copy=
+fi
+exec > >(tee -a -p -- "$buffer" ${copy:+"$copy"})
 tee=$!
 
 # uutils' tail, Ubuntu 26.04's tail, passes on only the first 3 MiB of the file it follows (#57); GNU's
