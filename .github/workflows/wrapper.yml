@@ -48,9 +48,7 @@ jobs:
         with:
           stream-copy: ${{ runner.temp }}/claude-stream.jsonl
 
-      # The node that runs the renderer is the seam: in the claude step, the renderer dies right after
-      # it opens its first group, never reads at all, or saves its exit status. A later write to
-      # GITHUB_ENV wins.
+      # The node that runs the renderer is the seam. A later write to GITHUB_ENV wins.
       - name: Stand in for the renderer's node
         run: |
           fake="$RUNNER_TEMP/fake-node"
@@ -124,10 +122,6 @@ jobs:
           echo "control: control-after-action (prints *** when commands are live in this step)"
           echo "injected: spike-wrapper-secret (prints in clear when the injected add-mask stayed inert)"
           echo "action outputs: conclusion=${CONCLUSION:-unset} execution_file=${EXECUTION_FILE:-unset}"
-          if [ "$RENDERER" = hangs ]; then
-            echo "a hung renderer never gets to write the raw copy"
-            exit 0
-          fi
           stream="$RUNNER_TEMP/claude-stream.jsonl"
           if [ "$RENDERER" = records ]; then
             status=$(cat "$RUNNER_TEMP/renderer-exit" 2>/dev/null || echo none)
@@ -185,5 +179,5 @@ jobs:
           execution-file: ${{ steps.claude.outputs.execution_file }}
 
       - name: The same run, through the CLI
-        if: always() && matrix.renderer != 'hangs'
+        if: always()
         run: render-agent-log < "$RUNNER_TEMP/claude-stream.jsonl"

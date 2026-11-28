@@ -35,9 +35,8 @@ const lingers =
   'process.on("SIGTERM", () => setTimeout(() => process.exit(143), 2000)); setInterval(() => {}, 60000);';
 
 // Runs the wrapper under the stand-in SDK. `renderer` replaces the node that runs the renderer,
-// `shim` puts a process between the SDK and the wrapper, `copy` asks for the raw copy, `pause` has
-// claude stop after its first line, and `wait` has it wait after the stream, then stop slowly, with the
-// SDK's pid in sdk.pid.
+// `shim` puts a process between the SDK and the wrapper, `copy` asks for the raw copy, and `pause`
+// has claude stop after its first line.
 function runWrapper(
   stream: string,
   options: {
