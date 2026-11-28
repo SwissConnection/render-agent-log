@@ -59,12 +59,12 @@ if [[ $parent != pipe:* || $parent == "$own" ]]; then
   exec "$real" "$@"
 fi
 
-# claude's stdout goes through tee to the SDK and to a file the renderer follows. A pipe to the
-# renderer would fill when the renderer hangs or falls behind, and stall tee, claude and the SDK with
-# it; a file never fills. tee -p ignores SIGPIPE, so it keeps the file whole should the SDK stop
-# reading first.
+# claude's stdout goes through tee to the SDK, to a file the renderer follows, and to the stream copy
+# as it comes: a cancel stops every process here (#84). A pipe to the renderer would fill when the
+# renderer hangs or falls behind, and stall tee, claude and the SDK with it; a file never fills. tee -p
+# ignores SIGPIPE, so it keeps the files whole should the SDK stop reading first.
 buffer=$(mktemp "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/render-agent-log.XXXXXX")
-exec > >(tee -p -- "$buffer")
+exec > >(tee -a -p -- "$buffer" ${RENDER_AGENT_LOG_STREAM_COPY:+"$RENDER_AGENT_LOG_STREAM_COPY"})
 tee=$!
 
 # uutils' tail, Ubuntu 26.04's tail, passes on only the first 3 MiB of the file it follows (#57); GNU's
@@ -75,21 +75,11 @@ tail=$(command -v gnutail || echo tail)
 # and it writes the stream's last lines after claude's.
 {
   set +e
-  # On a cancel, claude-code-action sends SIGTERM to every process under it and kills them a second
-  # later (#84). The block lives on to keep the copy; a handler, not an ignore, so tail still stops.
-  trap : TERM
   # A pipeline, so the block waits for tail too and removes the buffer only once tail has had it (#26).
   "$tail" -f -n +1 --pid="$tee" -- "$buffer" | "${RENDER_AGENT_LOG_NODE:-node}" "$root/dist/index.js"
   # A renderer that died, SIGKILL included, may have left a group open, which would fold the rest of
-  # the step's log into it, the action's own ::error:: included. 143 is its own stop on SIGTERM, after
-  # it closed its groups.
-  status=${PIPESTATUS[1]}
-  if [[ $status -ne 0 && $status -ne 143 ]]; then printf '::endgroup::\n'; fi
-  if [[ -n ${RENDER_AGENT_LOG_STREAM_COPY:-} ]]; then
-    # A renderer that dies early takes tail with it, before the stream has ended.
-    while kill -0 "$tee" 2>/dev/null; do sleep 0.1; done
-    cat -- "$buffer" >>"$RENDER_AGENT_LOG_STREAM_COPY"
-  fi
+  # the step's log into it, the action's own ::error:: included.
+  if [[ ${PIPESTATUS[1]} -ne 0 ]]; then printf '::endgroup::\n'; fi
   rm -f -- "$buffer"
 } </dev/null >"$log" 2>&1 &
 

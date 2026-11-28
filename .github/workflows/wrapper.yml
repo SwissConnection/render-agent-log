@@ -24,8 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         # One turn ends the run in error_max_turns, so the action reports a failure (::error::), which is
-        # the case's expected outcome. In the cancelled case, the step times out in a wait, and the
-        # action stops the session (#84).
+        # the case's expected outcome. So is a timeout, which the action handles as a cancel (#84).
         include:
           - { name: healthy, renderer: healthy, max_turns: 4, outcome: success }
           - { name: renderer dies, renderer: dies, max_turns: 4, outcome: success }
@@ -50,8 +49,8 @@ jobs:
           stream-copy: ${{ runner.temp }}/claude-stream.jsonl
 
       # The node that runs the renderer is the seam: in the claude step, the renderer dies right after
-      # it opens its first group, never reads at all, or renders and saves how it exited, outliving
-      # the action's SIGTERM to do so. A later write to GITHUB_ENV wins.
+      # it opens its first group, never reads at all, or saves its exit status. A later write to
+      # GITHUB_ENV wins.
       - name: Stand in for the renderer's node
         run: |
           fake="$RUNNER_TEMP/fake-node"
@@ -97,7 +96,7 @@ jobs:
           allowed_bots: github-actions
           path_to_claude_code_executable: ${{ steps.render.outputs.wrapper }}
           # Bash, not Read: Read numbers its lines, so injected commands would not start a line.
-          # Not a sleep in the cancelled case: Claude Code blocks a standalone sleep.
+          # Not sleep: Claude Code blocks a standalone sleep.
           prompt: |
             In a single message, make these two tool calls in parallel:
             Bash `cat ${{ runner.temp }}/hostile-output.txt` and Read `README.md`.
@@ -129,22 +128,15 @@ jobs:
             echo "a hung renderer never gets to write the raw copy"
             exit 0
           fi
-          # The wrapper removes its buffer once the copy is written.
-          for _ in $(seq 50); do
-            ls "$RUNNER_TEMP"/render-agent-log.* >/dev/null 2>&1 || break
-            sleep 0.2
-          done
           stream="$RUNNER_TEMP/claude-stream.jsonl"
           if [ "$RENDERER" = records ]; then
-            # The action sends SIGTERM and kills what is left a second later: 143 is the renderer's
-            # own stop, after it closed its groups. A kill or no signal at all leaves no status.
             status=$(cat "$RUNNER_TEMP/renderer-exit" 2>/dev/null || echo none)
             echo "renderer exit status: $status"
             if [ "$status" != 143 ]; then
               echo "::error::the renderer's exit status is $status, where a stop on the action's SIGTERM gives 143"
               exit 1
             fi
-            # A cancel leaves no execution file, so the copy is the run's only record.
+            # A cancel leaves no execution file to compare with.
             if ! jq -e 'select(.type == "assistant") | .message.content[]? | select(.type == "tool_use")
                 | .input.command // "" | select(contains("tail -f"))' "$stream" >/dev/null; then
               echo "::error::the wrapper's copy is missing, cut short, or ends before the call the run stopped in"
@@ -153,6 +145,11 @@ jobs:
             echo "the wrapper's copy holds the run up to the call it stopped in"
             exit 0
           fi
+          # The wrapper removes its buffer once tail is done with it.
+          for _ in $(seq 50); do
+            ls "$RUNNER_TEMP"/render-agent-log.* >/dev/null 2>&1 || break
+            sleep 0.2
+          done
           # Every message the SDK recorded, byte for byte after normalizing, is in the wrapper's copy.
           if [ ! -s "$stream" ] || [ ! -s "$EXECUTION_FILE" ]; then
             echo "::error::the wrapper's copy or the execution file is missing or empty"

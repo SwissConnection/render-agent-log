@@ -30,10 +30,14 @@ function script(dir: string, name: string, body: string): string {
   return path;
 }
 
+// A claude slow to stop, in node: a shell would reap tee, which claude, its parent, never does.
+const lingers =
+  'process.on("SIGTERM", () => setTimeout(() => process.exit(143), 2000)); setInterval(() => {}, 60000);';
+
 // Runs the wrapper under the stand-in SDK. `renderer` replaces the node that runs the renderer,
 // `shim` puts a process between the SDK and the wrapper, `copy` asks for the raw copy, `pause` has
-// claude stop after its first line, and `wait` has it wait after the stream, with the SDK's pid in
-// sdk.pid.
+// claude stop after its first line, and `wait` has it wait after the stream, then stop slowly, with the
+// SDK's pid in sdk.pid.
 function runWrapper(
   stream: string,
   options: {
@@ -50,7 +54,7 @@ function runWrapper(
   const print = options.pause
     ? `head -n 1 "${file}"; sleep 1; tail -n +2 "${file}"`
     : options.wait
-      ? `echo $PPID > "${dir}/sdk.pid"; cat "${file}"; exec sleep 60`
+      ? `echo $PPID > "${dir}/sdk.pid"; cat "${file}"; exec "${process.execPath}" -e '${lingers}'`
       : `exec cat "${file}"`;
   const claude = script(dir, "claude", print);
   const target = options.shim ? script(dir, "shim", `"${wrapper}" "$@"`) : wrapper;
@@ -77,8 +81,8 @@ function runWrapper(
   return { sdk, log: once(child, "exit").then(() => log), logged: () => log, dir };
 }
 
-// The processes under `root`, which claude-code-action signals on a cancel (its stopDescendants).
-function descendants(root: number): number[] {
+// Stops the processes under `root` as claude-code-action does on a cancel (its stopDescendants).
+async function stopUnder(root: number): Promise<void> {
   const children = new Map<number, number[]>();
   for (const name of readdirSync("/proc").filter((entry) => /^\d+$/.test(entry))) {
     try {
@@ -91,7 +95,16 @@ function descendants(root: number): number[] {
   }
   const tree = [root];
   for (const pid of tree) tree.push(...(children.get(pid) ?? []));
-  return tree.slice(1);
+  for (const signal of ["SIGSTOP", "SIGTERM", "SIGCONT", "SIGKILL"] as const) {
+    if (signal === "SIGKILL") await sleep(1000);
+    for (const pid of tree.slice(1)) {
+      try {
+        process.kill(pid, signal);
+      } catch {
+        // It has ended
+      }
+    }
+  }
 }
 
 // A stream far larger than a pipe holds: one tool result of 200,000 lines.
@@ -185,9 +198,7 @@ describe.skipIf(process.platform !== "linux")("the wrapper", () => {
     const rendered = await render(stream);
     const { log, logged, dir } = runWrapper(stream, { copy: true, wait: true });
     while (logged() !== rendered) await sleep(20);
-    for (const pid of descendants(Number(readFileSync(join(dir, "sdk.pid"), "utf8")))) {
-      process.kill(pid, "SIGTERM");
-    }
+    await stopUnder(Number(readFileSync(join(dir, "sdk.pid"), "utf8")));
     expect(await log).toBe(rendered);
     expect(readFileSync(join(dir, "copy.jsonl"), "utf8")).toBe(stream);
   }, 20_000);
