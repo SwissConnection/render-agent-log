@@ -129,26 +129,31 @@ jobs:
             echo "a hung renderer never gets to write the raw copy"
             exit 0
           fi
-          if [ "$RENDERER" = records ]; then
-            # The action sends SIGTERM and kills what is left a second later: 143 is the renderer's
-            # own stop, after it closed its groups. A kill or no signal at all leaves no status.
-            status=$(cat "$RUNNER_TEMP/renderer-exit" 2>/dev/null || echo none)
-            copy=missing
-            if [ -s "$RUNNER_TEMP/claude-stream.jsonl" ]; then copy=written; fi
-            echo "renderer exit status: $status; stream copy: $copy"
-            if [ "$status" != 143 ]; then
-              echo "::error::the renderer's exit status is $status, where a stop on the action's SIGTERM gives 143"
-              exit 1
-            fi
-            exit 0
-          fi
           # The wrapper removes its buffer once the copy is written.
           for _ in $(seq 50); do
             ls "$RUNNER_TEMP"/render-agent-log.* >/dev/null 2>&1 || break
             sleep 0.2
           done
-          # Every message the SDK recorded, byte for byte after normalizing, is in the wrapper's copy.
           stream="$RUNNER_TEMP/claude-stream.jsonl"
+          if [ "$RENDERER" = records ]; then
+            # The action sends SIGTERM and kills what is left a second later: 143 is the renderer's
+            # own stop, after it closed its groups. A kill or no signal at all leaves no status.
+            status=$(cat "$RUNNER_TEMP/renderer-exit" 2>/dev/null || echo none)
+            echo "renderer exit status: $status"
+            if [ "$status" != 143 ]; then
+              echo "::error::the renderer's exit status is $status, where a stop on the action's SIGTERM gives 143"
+              exit 1
+            fi
+            # A cancel leaves no execution file, so the copy is the run's only record.
+            if ! jq -e 'select(.type == "assistant") | .message.content[]? | select(.type == "tool_use")
+                | .input.command // "" | select(contains("tail -f"))' "$stream" >/dev/null; then
+              echo "::error::the wrapper's copy is missing, cut short, or ends before the call the run stopped in"
+              exit 1
+            fi
+            echo "the wrapper's copy holds the run up to the call it stopped in"
+            exit 0
+          fi
+          # Every message the SDK recorded, byte for byte after normalizing, is in the wrapper's copy.
           if [ ! -s "$stream" ] || [ ! -s "$EXECUTION_FILE" ]; then
             echo "::error::the wrapper's copy or the execution file is missing or empty"
             exit 1
@@ -183,5 +188,5 @@ jobs:
           execution-file: ${{ steps.claude.outputs.execution_file }}
 
       - name: The same run, through the CLI
-        if: always() && matrix.renderer != 'hangs' && !matrix.cancel
+        if: always() && matrix.renderer != 'hangs'
         run: render-agent-log < "$RUNNER_TEMP/claude-stream.jsonl"

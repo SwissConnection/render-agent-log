@@ -18,6 +18,8 @@ interface Run {
   sdk: Promise<{ stream: string; code: number }>;
   // Everything written to the step's log, once every writer has let go of it.
   log: Promise<string>;
+  // What has reached the step's log so far.
+  logged: () => string;
   // The run's scratch directory, which also holds the raw copy when asked for (copy.jsonl).
   dir: string;
 }
@@ -29,18 +31,27 @@ function script(dir: string, name: string, body: string): string {
 }
 
 // Runs the wrapper under the stand-in SDK. `renderer` replaces the node that runs the renderer,
-// `shim` puts a process between the SDK and the wrapper, `copy` asks for the raw copy, and `pause`
-// has claude stop after its first line.
+// `shim` puts a process between the SDK and the wrapper, `copy` asks for the raw copy, `pause` has
+// claude stop after its first line, and `wait` has it wait after the stream, with the SDK's pid in
+// sdk.pid.
 function runWrapper(
   stream: string,
-  options: { renderer?: string; shim?: boolean; copy?: boolean; pause?: boolean } = {},
+  options: {
+    renderer?: string;
+    shim?: boolean;
+    copy?: boolean;
+    pause?: boolean;
+    wait?: boolean;
+  } = {},
 ): Run {
   const dir = mkdtempSync(join(tmpdir(), "wrapper-test-"));
   const file = join(dir, "stream.jsonl");
   writeFileSync(file, stream);
   const print = options.pause
     ? `head -n 1 "${file}"; sleep 1; tail -n +2 "${file}"`
-    : `exec cat "${file}"`;
+    : options.wait
+      ? `echo $PPID > "${dir}/sdk.pid"; cat "${file}"; exec sleep 60`
+      : `exec cat "${file}"`;
   const claude = script(dir, "claude", print);
   const target = options.shim ? script(dir, "shim", `"${wrapper}" "$@"`) : wrapper;
   const out = join(dir, "sdk.json");
@@ -63,7 +74,24 @@ function runWrapper(
     while (!existsSync(out)) await sleep(20);
     return JSON.parse(readFileSync(out, "utf8"));
   })();
-  return { sdk, log: once(child, "exit").then(() => log), dir };
+  return { sdk, log: once(child, "exit").then(() => log), logged: () => log, dir };
+}
+
+// The processes under `root`, which claude-code-action signals on a cancel (its stopDescendants).
+function descendants(root: number): number[] {
+  const children = new Map<number, number[]>();
+  for (const name of readdirSync("/proc").filter((entry) => /^\d+$/.test(entry))) {
+    try {
+      const stat = readFileSync(`/proc/${name}/stat`, "utf8");
+      const parent = Number(stat.slice(stat.lastIndexOf(")") + 2).split(" ")[1]);
+      children.set(parent, [...(children.get(parent) ?? []), Number(name)]);
+    } catch {
+      // It has ended
+    }
+  }
+  const tree = [root];
+  for (const pid of tree) tree.push(...(children.get(pid) ?? []));
+  return tree.slice(1);
 }
 
 // A stream far larger than a pipe holds: one tool result of 200,000 lines.
@@ -150,6 +178,18 @@ describe.skipIf(process.platform !== "linux")("the wrapper", () => {
     const text = await log;
     expect(text).toContain("::group::");
     expect(text.slice(text.lastIndexOf("::group::"))).toMatch(/\n::endgroup::\n$/);
+  }, 20_000);
+
+  test("keeps the whole raw copy and adds nothing to the log when the action stops the run", async () => {
+    const stream = fixture("subagent");
+    const rendered = await render(stream);
+    const { log, logged, dir } = runWrapper(stream, { copy: true, wait: true });
+    while (logged() !== rendered) await sleep(20);
+    for (const pid of descendants(Number(readFileSync(join(dir, "sdk.pid"), "utf8")))) {
+      process.kill(pid, "SIGTERM");
+    }
+    expect(await log).toBe(rendered);
+    expect(readFileSync(join(dir, "copy.jsonl"), "utf8")).toBe(stream);
   }, 20_000);
 
   test("warns and renders nothing when its parent's stdout is not the log", async () => {

@@ -75,11 +75,16 @@ tail=$(command -v gnutail || echo tail)
 # and it writes the stream's last lines after claude's.
 {
   set +e
+  # On a cancel, claude-code-action sends SIGTERM to every process under it and kills them a second
+  # later (#84). The block lives on to keep the copy; a handler, not an ignore, so tail still stops.
+  trap : TERM
   # A pipeline, so the block waits for tail too and removes the buffer only once tail has had it (#26).
   "$tail" -f -n +1 --pid="$tee" -- "$buffer" | "${RENDER_AGENT_LOG_NODE:-node}" "$root/dist/index.js"
   # A renderer that died, SIGKILL included, may have left a group open, which would fold the rest of
-  # the step's log into it, the action's own ::error:: included.
-  if [[ ${PIPESTATUS[1]} -ne 0 ]]; then printf '::endgroup::\n'; fi
+  # the step's log into it, the action's own ::error:: included. 143 is its own stop on SIGTERM, after
+  # it closed its groups.
+  status=${PIPESTATUS[1]}
+  if [[ $status -ne 0 && $status -ne 143 ]]; then printf '::endgroup::\n'; fi
   if [[ -n ${RENDER_AGENT_LOG_STREAM_COPY:-} ]]; then
     # A renderer that dies early takes tail with it, before the stream has ended.
     while kill -0 "$tee" 2>/dev/null; do sleep 0.1; done
