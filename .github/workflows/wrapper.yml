@@ -24,13 +24,15 @@ jobs:
       fail-fast: false
       matrix:
         # One turn ends the run in error_max_turns, so the action reports a failure (::error::), which is
-        # the case's expected outcome.
+        # the case's expected outcome. In the cancelled case, the step times out in a sleep, and the
+        # action stops the session (#84).
         include:
           - { name: healthy, renderer: healthy, max_turns: 4, outcome: success }
           - { name: renderer dies, renderer: dies, max_turns: 4, outcome: success }
           - { name: renderer hangs, renderer: hangs, max_turns: 4, outcome: success }
           - { name: run fails, renderer: healthy, max_turns: 1, outcome: failure }
           - { name: renderer dies and run fails, renderer: dies, max_turns: 1, outcome: failure }
+          - { name: run cancelled, renderer: records, max_turns: 4, outcome: failure, cancel: true }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -48,7 +50,8 @@ jobs:
           stream-copy: ${{ runner.temp }}/claude-stream.jsonl
 
       # The node that runs the renderer is the seam: in the claude step, the renderer dies right after
-      # it opens its first group, or never reads at all. A later write to GITHUB_ENV wins.
+      # it opens its first group, never reads at all, or renders and saves how it exited, outliving
+      # the action's SIGTERM to do so. A later write to GITHUB_ENV wins.
       - name: Stand in for the renderer's node
         run: |
           fake="$RUNNER_TEMP/fake-node"
@@ -57,6 +60,11 @@ jobs:
           case "\$SPIKE_RENDERER" in
             dies) "$RENDER_AGENT_LOG_NODE" "\$@" | awk '{ print } /^::group::/ { exit 1 }' ;;
             hangs) exec sleep 3600 ;;
+            records)
+              trap '' TERM
+              "$RENDER_AGENT_LOG_NODE" "\$@"
+              echo \$? >"$RUNNER_TEMP/renderer-exit"
+              ;;
             *) exec "$RENDER_AGENT_LOG_NODE" "\$@" ;;
           esac
           EOF
@@ -78,6 +86,7 @@ jobs:
       - name: Claude through the wrapper
         id: claude
         continue-on-error: ${{ matrix.outcome == 'failure' }}
+        timeout-minutes: ${{ matrix.cancel && 1 || 10 }}
         uses: anthropics/claude-code-action@4411a9e9b0283becf4b924f7bce360fd7756c78c # v1.0.290
         env:
           SPIKE_RENDERER: ${{ matrix.renderer }}
@@ -91,6 +100,7 @@ jobs:
           prompt: |
             In a single message, make these two tool calls in parallel:
             Bash `cat ${{ runner.temp }}/hostile-output.txt` and Read `README.md`.
+            ${{ matrix.cancel && 'Then run Bash `sleep 300`.' || '' }}
             Then reply with one short sentence. Do nothing else.
           claude_args: |
             --model haiku
@@ -116,6 +126,19 @@ jobs:
           echo "action outputs: conclusion=${CONCLUSION:-unset} execution_file=${EXECUTION_FILE:-unset}"
           if [ "$RENDERER" = hangs ]; then
             echo "a hung renderer never gets to write the raw copy"
+            exit 0
+          fi
+          if [ "$RENDERER" = records ]; then
+            # The action sends SIGTERM and kills what is left a second later: 143 is the renderer's
+            # own stop, after it closed its groups. A kill or no signal at all leaves no status.
+            status=$(cat "$RUNNER_TEMP/renderer-exit" 2>/dev/null || echo none)
+            copy=missing
+            if [ -s "$RUNNER_TEMP/claude-stream.jsonl" ]; then copy=written; fi
+            echo "renderer exit status: $status; stream copy: $copy"
+            if [ "$status" != 143 ]; then
+              echo "::error::the renderer's exit status is $status, where a stop on the action's SIGTERM gives 143"
+              exit 1
+            fi
             exit 0
           fi
           # The wrapper removes its buffer once the copy is written.
@@ -159,5 +182,5 @@ jobs:
           execution-file: ${{ steps.claude.outputs.execution_file }}
 
       - name: The same run, through the CLI
-        if: always() && matrix.renderer != 'hangs'
+        if: always() && matrix.renderer != 'hangs' && !matrix.cancel
         run: render-agent-log < "$RUNNER_TEMP/claude-stream.jsonl"
